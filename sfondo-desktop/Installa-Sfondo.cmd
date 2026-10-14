@@ -33,9 +33,9 @@ exit /b 0
 # ── Impostazioni ──
 # Parametri utili nell'indirizzo:
 #   area=meta   (poco meno della metà destra, tutta l'altezza)   area=quarto (quarto in alto a destra)
-#   turni=0..6  barre=1|0  orologio=1|0  reperibili=1|0  avviso=1|0  minuti=30  rubrica=1|0
+#   turni=0..6  orologio=1|0  reperibili=1|0  avviso=1|0  minuti=30  rubrica=1|0 (tabella codici)
 $Url        = 'https://centrale118rsm-code.github.io/Reperibili-Live/?sfondo=1&area=meta'
-$Intervallo = 15        # secondi fra un aggiornamento e l'altro (15 = l'anello dei secondi avanza a scatti di 15 s; 30 o 60 = meno carico)
+$Intervallo = 60        # secondi fra un aggiornamento e l'altro (60 = ogni minuto, allineato all'orologio)
 $Titolo     = 'I.S.S. - Servizio Informatico'   # riquadro informazioni in basso a destra (vuoto = niente riquadro)
 $AttesaDati = 20000     # millisecondi lasciati alla pagina per caricare turni e reperibili
 
