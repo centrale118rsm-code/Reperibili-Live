@@ -76,6 +76,16 @@ function Imposta-Sfondo($path){
   for($k = 0; $k -lt 3; $k++){ Start-Process rundll32.exe -ArgumentList 'user32.dll,UpdatePerUserSystemParameters 1, True' -WindowStyle Hidden -Wait }
   return $true
 }
+# altezza della barra delle applicazioni in basso (in pixel veri), per non coprire il riquadro PC
+function Barra {
+  try {
+    Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
+    $sc = [System.Windows.Forms.Screen]::PrimaryScreen
+    $d = [int]($sc.Bounds.Bottom - $sc.WorkingArea.Bottom)
+    if($d -ge 0 -and $d -lt 400){ return $d }
+  } catch {}
+  return -1
+}
 function Risoluzione {
   if($wpOk){ try { [void][RLWin]::SetProcessDPIAware(); return @([RLWin]::GetSystemMetrics(0), [RLWin]::GetSystemMetrics(1)) } catch {} }
   try { $v = Get-CimInstance Win32_VideoController | Where-Object { $_.CurrentHorizontalResolution } | Select-Object -First 1; if($v){ return @([int]$v.CurrentHorizontalResolution, [int]$v.CurrentVerticalResolution) } } catch {}
@@ -156,7 +166,10 @@ while($true){
     Remove-Item $tmp -Force -ErrorAction SilentlyContinue
     $sep = '?'; if($Url -match '\?'){ $sep = '&' }
     $t0 = OraMs
-    $u = $Url + $sep + 'ts=' + $t0 + '&ofs=' + $ofs + $info
+    $tb = Barra
+    $hash = $info; if(-not $hash){ $hash = '#x=1' }
+    if($tb -ge 0){ $hash += '&tb=' + $tb }
+    $u = $Url + $sep + 'ts=' + $t0 + '&ofs=' + $ofs + $hash
     $argv = "--headless --disable-gpu --hide-scrollbars --mute-audio --no-first-run --no-default-browser-check " +
             "--user-data-dir=`"$profilo`" --window-size=$w,$h --force-device-scale-factor=1 " +
             "--virtual-time-budget=$AttesaDati --screenshot=`"$tmp`" `"$u`""

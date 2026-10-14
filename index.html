@@ -90,7 +90,7 @@ body.no-date .date{display:none}
 
 /* ── Riquadro informazioni PC (come lo sfondo aziendale) ── */
 #pcinfo{display:none}
-body.sfondo #pcinfo.on{display:grid;position:fixed;right:1.3vw;bottom:1.6vh;grid-template-columns:auto auto;column-gap:1.6em;row-gap:.12em;
+body.sfondo #pcinfo.on{display:grid;position:fixed;right:1.3vw;bottom:calc(var(--tb, 48px) + 1.4vh);grid-template-columns:auto auto;column-gap:1.6em;row-gap:.12em;
   font-family:Tahoma,'Segoe UI',Arial,sans-serif;font-size:min(.78vw,1.45vh);color:#e8e8e8;line-height:1.25;z-index:3}
 #pcinfo .t{grid-column:1/-1;font-weight:700;margin-bottom:.15em}
 
@@ -218,9 +218,13 @@ body.sfondo{background:#000!important;padding:0;display:block;--area-w:42vw;--ar
 body.sfondo.area-quarto{--area-w:50vw;--area-h:50vh}
 body.sfondo *, body.sfondo *::before, body.sfondo *::after{animation:none!important;transition:none!important}
 body.sfondo #gear, body.sfondo #boot, body.sfondo #panel, body.sfondo #rubed, body.sfondo #status{display:none!important}
-body.sfondo main{position:fixed;top:0;right:0;width:var(--area-w);height:calc(var(--area-h) - var(--info-h,0px));container-type:size;
+body.sfondo main{position:fixed;top:0;right:0;width:var(--area-w);height:calc(var(--area-h) - var(--below,0px));container-type:size;
   display:flex!important;flex-direction:column;gap:2.4cqh;padding:2.8cqh 3.2cqw 1.6cqh;background:#000;overflow:hidden}
-body.sfondo.has-info:not(.area-quarto) main{--info-h:10vh}
+/* sotto il pannello: barra delle applicazioni di Windows (--tb, misurata dallo script) e riquadro PC */
+body.sfondo:not(.area-quarto) main{--below:calc(var(--tb, 48px) + 1vh)}
+body.sfondo.has-info:not(.area-quarto) main{--below:calc(var(--tb, 48px) + 11vh)}
+body.sfondo .blocks{display:block!important;margin-top:1cqh}
+body.sfondo .tt{margin-top:0}
 /* orologio: ora grande a sinistra, data a destra */
 body.sfondo .clock-col{flex:0 0 auto;flex-direction:row;align-items:flex-end;justify-content:space-between;gap:3cqw;padding-bottom:1.4cqh;border-bottom:1px solid var(--hair)}
 body.sfondo .dclock{font-size:min(14cqw,8.5cqh);justify-content:flex-start}
@@ -975,6 +979,8 @@ function renderAlert(now){
 function renderPcInfo(){
   const el = document.getElementById('pcinfo'); if(!el || !SFONDO) return;
   let q; try { q = new URLSearchParams((location.hash || '').replace(/^#/, '')); } catch(e){ return; }
+  const tb = parseInt(q.get('tb'));   // altezza della barra delle applicazioni in pixel (0 se è di lato o nascosta)
+  if(!isNaN(tb) && tb >= 0 && tb < 400) document.documentElement.style.setProperty('--tb', tb + 'px');
   const rows = [['Nome Computer:', q.get('pc')], ['Nome Utente:', q.get('utente')], ['Indirizzo IP:', q.get('ip')], ['Versione SO:', q.get('so')]].filter(r => r[1]);
   if(!rows.length){ el.classList.remove('on'); document.body.classList.remove('has-info'); return; }
   el.innerHTML = `<div class="t">${esc(q.get('titolo') || 'I.S.S. - Servizio Informatico')}</div>` + rows.map(r => `<span>${esc(r[0])}</span><span>${esc(r[1])}</span>`).join('');
