@@ -210,6 +210,11 @@ body.show-tools #gear{opacity:1;pointer-events:auto}
 .pn-foot button{font:inherit;font-size:14px;font-weight:600;border-radius:10px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--tx2)}
 .pn-foot button.pri{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 
+/* triangolo rosso accanto all'ora: solo sullo sfondo, quando il cambio turno è vicino */
+.wt{display:none}
+body.sfondo.cambio .wt{display:inline-flex;align-self:center;width:.42em;height:.42em;margin-left:.22em;transform:translateY(-.02em)}
+.wt svg{width:100%;height:100%;display:block}
+body.sfondo #alert{display:none!important}
 /* ── Modalità sfondo desktop: pannello solo a destra, il resto nero pieno per le icone ── */
 body.sfondo{background:#000!important;padding:0;display:block;--area-w:42vw;--area-h:100vh;--hair:#1f2532;--hair2:#151a24}
 body.sfondo.area-quarto{--area-w:50vw;--area-h:50vh}
@@ -356,7 +361,7 @@ body.sfondo.area-quarto .tt .p{font-size:min(1.4cqw,2.5cqh)}
 
 <main>
   <section class="clock-col">
-    <div class="dclock" id="dclock"><span id="dh">--</span><span class="sep">:</span><span id="dm">--</span><span class="sec" id="ds">--</span></div>
+    <div class="dclock" id="dclock"><span id="dh">--</span><span class="sep">:</span><span id="dm">--</span><span class="sec" id="ds">--</span><span class="wt" id="wt" aria-label="Cambio turno vicino"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6 1.4 21h21.2L12 2.6Z" fill="var(--red)"/><path d="M12 9.2v5.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.7" r="1.35" fill="#fff"/></svg></span></div>
     <div class="aclock"><svg viewBox="0 0 200 200" id="clock-svg" aria-hidden="true"></svg></div>
     <div class="adigital" id="adigital"></div>
     <div class="date" id="date"></div>
@@ -1002,6 +1007,7 @@ function renderAlert(now){
   ['rep-aut','rep-inf'].forEach(id => { const r = document.getElementById(id); if(r){ r.classList.toggle('soon', soon); r.classList.toggle('safe', !!a && !soon); } });
   const on = soon && (VIEW.alert || a.test);
   el.classList.toggle('on', !!on);
+  document.body.classList.toggle('cambio', !!on);
   if(!on) return;
   const sec = Math.ceil(ms / 1000), mm = Math.floor(sec / 60), ss = sec % 60;
   const hm = String(a.dt.getHours()).padStart(2,'0') + ':' + String(a.dt.getMinutes()).padStart(2,'0');
