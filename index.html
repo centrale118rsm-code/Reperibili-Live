@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f5f7">
+<title>Monitor Reperibili 118</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --line:#e6e8ec; --line2:#eef0f3;
+  --tx:#0e1525; --tx2:#5b6475; --tx3:#9aa2b1;
+  --red:#e3192b; --aut:#d97706; --inf:#2563eb; --cop:#7c3aed; --ok:#16a34a;
+  --cM:#eab308; --cP:#f97316; --cN:#6366f1;
+  --f:'Inter Tight', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+  --face:#ffffff; --tick:#c3c8d1; --hand:#0e1525; --cov-bg:#f5f0ff; --sw-off:#d4d8df; --veil:rgba(14,21,37,.28); --err:#b42318;
+  --on-accent:#ffffff; --clock-shadow:rgba(16,24,40,.10);
+  color-scheme:light;
+}
+/* ── Modalità notte: scuro, contrasto morbido, colori attenuati per non abbagliare ── */
+body.night{
+  --bg:#06080d; --card:#0e121b; --line:#1d2330; --line2:#171c27;
+  --tx:#d9dee8; --tx2:#8a93a6; --tx3:#566074;
+  --red:#d42a38; --aut:#c98a2c; --inf:#4f7fd6; --cop:#8b6ad6; --ok:#2f9e5b;
+  --cM:#b8972a; --cP:#c46a34; --cN:#6d70c9;
+  --shadow:0 0 0 1px rgba(255,255,255,.02), 0 10px 30px rgba(0,0,0,.45);
+  --face:#0e121b; --tick:#2a3242; --hand:#d9dee8; --cov-bg:#1a1430; --sw-off:#2a3140; --veil:rgba(0,0,0,.55); --err:#f08a8a;
+  --on-accent:#f3f4f6; --clock-shadow:rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+body.night .dclock, body.night .rep-n{color:#e6e9f0}
+body.night #alert{box-shadow:0 8px 30px rgba(212,42,56,.25)}
+body.night .secbar i.on{background:#aeb6c6}
+html,body{transition:background-color .8s}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--f);overflow:hidden;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;gap:2.6vh;padding:3.6vh 3.2vw}
+body.hide-cursor{cursor:none}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,40fr) minmax(0,60fr);gap:3vw}
+body.no-clock main{grid-template-columns:1fr}
+body.no-data main{grid-template-columns:1fr}
+body.no-clock .clock-col, body.no-data .data-col{display:none}
+body.no-reps .reps-wrap, body.no-shifts .shifts-wrap{display:none}
+
+/* ── Avviso cambio turno ── */
+#alert{display:none;align-items:center;gap:2vw;background:var(--red);color:var(--on-accent);border-radius:min(1.6vw,2.6vh);padding:2vh 2.2vw;
+  box-shadow:0 10px 34px rgba(227,25,43,.35);animation:alertPulse 1.6s ease-in-out infinite}
+#alert.on{display:flex}
+@keyframes alertPulse{0%,100%{box-shadow:0 10px 34px rgba(227,25,43,.30)}50%{box-shadow:0 10px 50px rgba(227,25,43,.65)}}
+.al-ico{flex:0 0 auto;width:min(5vw,8.5vh);height:min(5vw,8.5vh);animation:blink 1s steps(2,start) infinite}
+@keyframes blink{50%{opacity:.35}}
+.al-main{display:flex;flex-direction:column;gap:.6vh;min-width:0}
+.al-t{font-size:min(2.6vw,4.4vh);font-weight:800;letter-spacing:-.02em;line-height:1.05;text-transform:uppercase}
+.al-t b{font-variant-numeric:tabular-nums;background:var(--on-accent);color:var(--red);padding:0 .3em;border-radius:.2em;margin-left:.15em}
+.al-s{font-size:min(1.25vw,2.15vh);font-weight:500;opacity:.95;line-height:1.35}
+.al-s strong{font-weight:700}
+.al-test{display:inline-block;background:var(--on-accent);color:var(--red);font-size:.5em;font-weight:800;letter-spacing:.12em;padding:.15em .5em;border-radius:.25em;margin-right:.6em;vertical-align:middle}
+.pn-test{width:100%;margin-top:4px;font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:10px 14px;cursor:pointer;border:1.5px solid var(--red);background:transparent;color:var(--red)}
+.pn-test.on{background:var(--red);color:var(--on-accent)}
+
+/* ── Orologio ── */
+.clock-col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4vh;min-width:0}
+.dclock{display:flex;align-items:baseline;justify-content:center;font-weight:600;letter-spacing:-.045em;line-height:.9;font-variant-numeric:tabular-nums;font-size:min(11.5vw,22vh)}
+body.no-data .dclock{font-size:min(24vw,40vh)}
+.dclock .sep{margin:0 .02em;transform:translateY(-.06em)}
+@keyframes sep{50%{opacity:.25}}
+.dclock .sec{font-size:.42em;color:var(--red);font-weight:600;margin-left:.12em;display:inline-block;min-width:1.25em}
+.dclock .sec.tick{animation:tick .35s cubic-bezier(.3,1.8,.5,1)}
+@keyframes tick{0%{transform:translateY(-.18em) scale(1.12);opacity:.4}100%{transform:none;opacity:1}}
+body.no-seconds .dclock .sec, body.no-seconds .secbar{display:none}
+.secbar{display:grid;grid-template-columns:repeat(60,1fr);gap:min(.22vw,.4vh);width:min(34vw,62vh)}
+body.no-data .secbar{width:min(70vw,120vh)}
+.secbar i{height:min(.9vh,.5vw);min-height:4px;border-radius:2px;background:var(--line);transition:background .2s}
+.secbar i.on{background:var(--tx)}
+.secbar i.q{height:min(1.6vh,.9vw);min-height:7px}
+.secbar i.cur{background:var(--red)}
+.aclock{width:min(34vw,62vh);aspect-ratio:1;filter:drop-shadow(0 18px 40px var(--clock-shadow));display:none}
+body.no-data .aclock{width:min(60vw,68vh)}
+.aclock svg{width:100%;height:100%;display:block}
+body.analog .aclock{display:block} body.analog .dclock, body.analog .secbar{display:none}
+.hand{transform-box:view-box;transform-origin:100px 100px}
+.hand.sec{transition:transform .32s cubic-bezier(.4,2.1,.55,.45)}
+.hand.min{transition:transform .5s cubic-bezier(.4,1.6,.55,.7)}
+.hand.no-anim{transition:none!important}
+.adigital{display:none;font-weight:300;font-size:min(5vw,8vh);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+body.analog .adigital{display:block}
+.adigital .s{color:var(--red);font-weight:400}
+.date{font-size:min(1.7vw,3vh);font-weight:500;color:var(--tx2);text-transform:capitalize}
+body.no-date .date{display:none}
+
+/* ── Colonna dati ── */
+.data-col{display:flex;flex-direction:column;gap:4.5vh;min-width:0;justify-content:center}
+.kicker{display:flex;align-items:center;gap:.7em;font-size:min(1.15vw,2vh);font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3)}
+.kicker .pill{letter-spacing:.02em;text-transform:none;color:var(--tx2);background:var(--card);border:1px solid var(--line);padding:.2em .75em;border-radius:999px;font-variant-numeric:tabular-nums;font-weight:600}
+.dot{width:.62em;height:.62em;border-radius:50%;background:var(--red);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(227,25,43,.45)}70%{box-shadow:0 0 0 .65em rgba(227,25,43,0)}100%{box-shadow:0 0 0 0 rgba(227,25,43,0)}}
+.reps{display:flex;flex-direction:column;gap:1.4vh;margin-top:1.6vh}
+.rep{display:grid;grid-template-columns:min(11vw,19vh) minmax(0,1fr);align-items:center;gap:1.6vw;background:var(--card);border-radius:min(1.6vw,2.6vh);padding:2.2vh 2vw;box-shadow:var(--shadow);border:min(.32vw,.55vh) solid var(--line);transition:border-color .4s}
+/* Bordo di stato: verde = più di 30 minuti al cambio turno (si può chiamare), rosso = meno di 30 minuti */
+.rep.safe{border-color:var(--ok)}
+.rep.soon{border-color:var(--red);animation:repSoon 1.6s ease-in-out infinite}
+@keyframes repSoon{0%,100%{box-shadow:0 0 0 0 rgba(227,25,43,0),var(--shadow)}50%{box-shadow:0 0 0 min(.5vw,.9vh) rgba(227,25,43,.18),var(--shadow)}}
+.rep.cov{background:linear-gradient(90deg,var(--cov-bg),var(--card) 60%)}
+.rep-l{font-size:min(1.15vw,2vh);font-weight:600;color:var(--tx2);display:flex;align-items:center;gap:.6em}
+.rep-l::before{content:"";width:.7em;height:.7em;border-radius:3px;background:var(--c)}
+.rep.aut{--c:var(--aut)} .rep.inf{--c:var(--inf)}
+.rep-n{font-size:min(5.6vw,9.5vh);font-weight:700;letter-spacing:-.035em;line-height:1.02;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+body.no-shifts .rep-n{font-size:min(7vw,12vh)}
+.rep-n.none{color:var(--tx3);font-weight:500}
+.rep-x{display:flex;flex-wrap:wrap;align-items:center;gap:.4em .9em;margin-top:.5vh;font-size:min(1.05vw,1.8vh);font-weight:500;color:var(--tx3)}
+.rep-x:empty{display:none}
+.cop-badge{background:var(--cop);color:var(--on-accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.88em;padding:.22em .7em;border-radius:6px;animation:copBlink 2s ease-in-out infinite}
+@keyframes copBlink{50%{opacity:.6}}
+.cop-next{color:var(--cop);font-weight:600}
+.blocks{display:grid;grid-template-columns:repeat(var(--nblocks,4),minmax(0,1fr));gap:1vw;margin-top:1.6vh}
+.blk{background:var(--card);border-radius:min(1.2vw,2vh);padding:2vh 1.1vw 2.2vh;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:1.4vh;min-width:0;border:1.5px solid transparent}
+.blk.cur{border-color:var(--sc)}
+.blk.arriving{border-color:var(--red);box-shadow:0 0 0 3px rgba(227,25,43,.18),var(--shadow)}
+.blk.M{--sc:var(--cM)} .blk.P{--sc:var(--cP)} .blk.N{--sc:var(--cN)}
+.blk-h{display:flex;flex-direction:column;gap:.35vh}
+.blk-d{display:flex;justify-content:space-between;align-items:center;gap:.4em;font-size:min(.95vw,1.65vh);font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em}
+.now{color:var(--sc);display:flex;align-items:center;gap:.35em}
+.now::before{content:"";width:.5em;height:.5em;border-radius:50%;background:var(--sc)}
+.arr{color:var(--red);font-weight:700}
+.blk-t{display:flex;align-items:baseline;gap:.5em;font-size:min(1.7vw,2.9vh);font-weight:700;letter-spacing:-.02em}
+.blk-t::before{content:"";align-self:center;width:.42em;height:.42em;border-radius:50%;background:var(--sc);flex:0 0 auto}
+.blk-time{font-size:min(.9vw,1.55vh);color:var(--tx3);font-weight:500;font-variant-numeric:tabular-nums}
+.grp{display:flex;flex-direction:column;gap:.55vh;padding-top:1.2vh;border-top:1px solid var(--line2)}
+.p{display:flex;align-items:center;gap:.5em;font-size:min(1.45vw,2.5vh);font-weight:600;letter-spacing:-.01em;text-transform:uppercase;min-width:0}
+.p::before{content:"";width:.42em;height:.42em;border-radius:2px;background:var(--c);flex:0 0 auto}
+.grp.aut{--c:var(--aut)} .grp.inf{--c:var(--inf)}
+.p span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p em{font-style:normal;font-size:.58em;font-weight:600;color:var(--tx3);text-transform:none;white-space:nowrap;letter-spacing:0}
+.p.empty{color:var(--tx3);font-weight:500;text-transform:none}
+.p.empty::before{background:var(--line)}
+body.no-reps .blocks{grid-template-columns:repeat(min(var(--nblocks,4),3),minmax(0,1fr))}
+
+/* ── Rubrica codici ── */
+.rub-col{display:none;min-width:0;min-height:0}
+body.rub .rub-col{display:flex;flex-direction:column}
+body.rub main{grid-template-columns:minmax(0,31fr) minmax(0,47fr) minmax(0,22fr);gap:2.2vw}
+body.rub.no-clock main, body.rub.no-data main{grid-template-columns:minmax(0,74fr) minmax(0,26fr)}
+body.rub .dclock{font-size:min(9vw,18vh)} body.rub .secbar,body.rub .aclock{width:min(27vw,52vh)}
+body.rub.no-data .dclock{font-size:min(18vw,34vh)} body.rub.no-data .secbar{width:min(55vw,100vh)}
+body.rub .rep{grid-template-columns:min(8vw,14vh) minmax(0,1fr);padding:2vh 1.5vw}
+body.rub .rep-n{font-size:min(4.3vw,8.5vh)}
+body.rub .p{font-size:min(1.15vw,2.2vh)} body.rub .blk-t{font-size:min(1.4vw,2.5vh)} body.rub .blk{padding:1.8vh .8vw 2vh}
+#rubrica{flex:1;min-height:0;background:var(--card);border-radius:min(1.4vw,2.4vh);box-shadow:var(--shadow);padding:1.6vh 1.1vw;display:flex;flex-direction:column;gap:1.2vh;
+  --rh:calc(84vh / var(--rows,36));font-size:min(calc(var(--rh) * .56),1.15vw);overflow:hidden}
+.rb-sec{display:flex;flex-direction:column}
+.rb-h{font-size:.8em;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--c);display:flex;align-items:center;gap:.5em;height:calc(var(--rh) * 1.1)}
+.rb-h::before{content:"";width:.7em;height:.7em;border-radius:3px;background:var(--c)}
+.rb-sec.aut{--c:var(--aut)} .rb-sec.inf{--c:var(--inf)}
+/* codice subito accanto al nome, in una colonna stretta allineata: niente linee da seguire */
+.rb-r{display:grid;grid-template-columns:3.1em minmax(0,1fr);align-items:center;gap:.55em;height:var(--rh);padding:0 .4em;border-radius:.35em}
+.rb-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.rb-c{justify-self:stretch;text-align:center;font-weight:800;font-variant-numeric:tabular-nums;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border-radius:.3em;padding:.08em 0;line-height:1.25}
+.rb-r:nth-child(even){background:color-mix(in srgb,var(--tx) 3.5%,transparent)}
+.rb-r.live{background:var(--c);color:var(--on-accent)}
+.rb-r.live .rb-n{font-weight:800} .rb-r.live .rb-c{color:var(--c);background:var(--on-accent)}
+.rep-n .code{display:inline-block;vertical-align:middle;font-size:.42em;letter-spacing:0;font-weight:700;color:var(--c);border:.08em solid var(--c);border-radius:.3em;padding:.05em .35em;margin-left:.35em;transform:translateY(-.1em)}
+
+/* ── Editor rubrica ── */
+#rubed{position:fixed;inset:0;background:var(--veil);backdrop-filter:blur(4px);display:none;place-items:center;z-index:45}
+#rubed.open{display:grid}
+#rubed-box{width:min(820px,94vw);max-height:92vh;overflow:auto}
+.re-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.re-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--c);margin-bottom:8px}
+.re-h span{color:var(--tx3);letter-spacing:0}
+.re-col.aut{--c:var(--aut)} .re-col.inf{--c:var(--inf)}
+.re-list{display:flex;flex-direction:column;gap:5px}
+.re-row{display:grid;grid-template-columns:1fr 64px 30px;gap:5px}
+.re-row input{font:inherit;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--tx);min-width:0}
+.re-row input:focus{outline:2px solid var(--c);outline-offset:-1px;background:var(--card)}
+.re-c{text-align:center;font-weight:700}
+.re-x{border:0;background:transparent;color:var(--tx3);font-size:14px;cursor:pointer;border-radius:8px}
+.re-x:hover{background:var(--bg);color:var(--red)}
+.re-add{margin-top:8px;width:100%;font:inherit;font-size:13px;font-weight:600;padding:8px;border-radius:8px;border:1px dashed var(--line);background:transparent;color:var(--tx2);cursor:pointer}
+.re-msg{color:var(--err);font-size:13px;font-weight:600;margin-top:10px;min-height:1em}
+@media (max-width:640px){ .re-cols{grid-template-columns:1fr} }
+
+/* ── Impostazioni ── */
+#gear{position:fixed;right:1.2vw;bottom:1.4vh;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);
+  display:grid;place-items:center;cursor:pointer;color:var(--tx2);opacity:0;pointer-events:none;transition:opacity .35s;z-index:20}
+body.show-tools #gear{opacity:1;pointer-events:auto}
+#gear:hover{color:var(--tx)}
+#panel{position:fixed;inset:0;background:var(--veil);backdrop-filter:blur(4px);display:none;place-items:center;z-index:40}
+#panel.open{display:grid}
+.pn{background:var(--card);border-radius:20px;box-shadow:0 30px 80px rgba(16,24,40,.25);width:min(460px,92vw);max-height:90vh;overflow:auto;padding:22px 22px 18px}
+.pn h2{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.pn p.hint{font-size:13px;color:var(--tx3);margin-bottom:14px}
+.pn h3{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin:16px 0 6px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line2);font-size:15px;font-weight:500}
+.row:last-child{border-bottom:0}
+.row small{display:block;font-size:12px;color:var(--tx3);font-weight:500;margin-top:2px}
+.sw{position:relative;width:46px;height:26px;flex:0 0 auto}
+.sw input{opacity:0;width:0;height:0}
+.sw span{position:absolute;inset:0;background:var(--sw-off);border-radius:999px;transition:.2s;cursor:pointer}
+.sw span::after{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:var(--face);border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.2s}
+.sw input:checked + span{background:var(--tx)}
+.sw input:checked + span::after{background:var(--bg)}
+.sw input:checked + span::after{transform:translateX(20px)}
+.seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px;flex:0 0 auto}
+.seg button{border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--tx2);padding:6px 11px;border-radius:8px;cursor:pointer}
+.seg button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 3px rgba(16,24,40,.12)}
+.pn-foot{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
+.pn-foot button{font:inherit;font-size:14px;font-weight:600;border-radius:10px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--tx2)}
+.pn-foot button.pri{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+
+#status{position:fixed;left:1.4vw;bottom:1.2vh;font-size:12px;font-weight:600;color:var(--err);display:flex;gap:1em}
+#status:empty{display:none}
+#boot{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:50;transition:opacity .5s}
+#boot.gone{opacity:0;pointer-events:none}
+#boot div{width:40px;height:40px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--red);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media (max-aspect-ratio: 5/4){
+  html,body{overflow:auto;height:auto}
+  body{padding:3vh 5vw}
+  main{grid-template-columns:1fr!important;gap:4vh}
+  .dclock{font-size:min(22vw,14vh)} .secbar{width:min(80vw,50vh)} .aclock{width:min(70vw,44vh)}
+  .date{font-size:min(4vw,2.4vh)} .kicker{font-size:min(3.2vw,1.8vh)}
+  .al-t{font-size:min(5vw,3vh)} .al-s{font-size:min(3.4vw,1.8vh)} .al-ico{width:min(10vw,6vh);height:min(10vw,6vh)}
+  .rep{grid-template-columns:1fr;gap:.6vh;padding:2vh 5vw}
+  .rep-l{font-size:min(3.4vw,1.9vh)} .rep-n{font-size:min(13vw,8vh)!important} .rep-x{font-size:min(3.2vw,1.7vh)}
+  .blocks{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:3vw}
+  .blk{padding:2vh 4vw}
+  .blk-d{font-size:min(3vw,1.6vh)} .blk-t{font-size:min(5vw,2.8vh)} .blk-time{font-size:min(3vw,1.5vh)}
+  .p{font-size:min(4.4vw,2.4vh)}
+  body.rub main{grid-template-columns:1fr!important}
+  #rubrica{--rh:min(3.6vh,6vw);font-size:min(3.6vw,2vh)}
+}
+</style>
+</head>
+<body>
+<div id="boot"><div></div></div>
+
+<div id="alert" role="alert">
+  <svg class="al-ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 2 20.5h20L12 3Z" fill="var(--on-accent)"/><path d="M12 9.5v5" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.4" r="1.25" fill="var(--red)"/></svg>
+  <div class="al-main">
+    <div class="al-t" id="al-t"></div>
+    <div class="al-s" id="al-s"></div>
+  </div>
+</div>
+
+<main>
+  <section class="clock-col">
+    <div class="dclock" id="dclock"><span id="dh">--</span><span class="sep">:</span><span id="dm">--</span><span class="sec" id="ds">--</span></div>
+    <div class="secbar" id="secbar"></div>
+    <div class="aclock"><svg viewBox="0 0 200 200" id="clock-svg" aria-hidden="true"></svg></div>
+    <div class="adigital" id="adigital"></div>
+    <div class="date" id="date"></div>
+  </section>
+
+  <section class="data-col">
+    <div class="reps-wrap">
+      <div class="kicker"><span class="dot"></span><span>Reperibili ora</span><span class="pill" id="rep-slot">—</span></div>
+      <div class="reps">
+        <div class="rep aut" id="rep-aut"></div>
+        <div class="rep inf" id="rep-inf"></div>
+      </div>
+    </div>
+    <div class="shifts-wrap">
+      <div class="kicker"><span>Prossimi turni</span></div>
+      <div class="blocks" id="blocks"></div>
+    </div>
+  </section>
+  <aside class="rub-col"><div id="rubrica"></div></aside>
+</main>
+
+<button id="gear" onclick="openPanel()" aria-label="Impostazioni"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
+<div id="panel" onclick="if(event.target===this)closePanel()"><div class="pn" id="pn"></div></div>
+<div id="rubed" onclick="if(event.target===this)closeRubEditor()"><div class="pn" id="rubed-box"></div></div>
+<div id="status"></div>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// MONITOR REPERIBILI 118 — pagina da lasciare sempre aperta su uno schermo.
+// Legge gli stessi dati delle due app:
+//  • AUTISTI  → turni.xlsx (Turni-Autisti-2026-Rsm) + Firebase area-personale-autsocc-118-rsm
+//               (cessioni reperibilità, reperibilità manuale admin, cambi turno automatici)
+//  • INFERMIERI → Firebase creazione-turni-118 (impostazioni, turni "solo app" oppure
+//               infermieri.xlsx + modifiche coordinatore, documento "reperibilita")
+// Firebase aggiorna in tempo reale; i file Excel si ricaricano ogni 10 minuti.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Tutte le variabili globali QUI IN CIMA (i listener Firebase possono scattare subito) ──
+const CFG = {
+  AUT_XLSX: 'https://centrale118rsm-code.github.io/Turni-Autisti-2026-Rsm/turni.xlsx',
+  INF_XLSX: 'https://centrale118rsm-code.github.io/Turni-Infermieri-2026/infermieri.xlsx',
+  INF_APP:  'https://centrale118rsm-code.github.io/Turni-Infermieri-2026/index.html',
+  // Spazio dati dell'app infermieri (DATA_NS): viene letto in automatico dal codice dell'app
+  // pubblicata, così il monitor segue sempre la stessa sorgente. Questo è solo il ripiego.
+  INF_NS_FALLBACK: 'prova_',
+  BLOCKS: 4,                 // quanti turni mostrare (attuale compreso)
+  EXCEL_REFRESH_MIN: 10,
+  RELOAD_HOUR: 4             // ricarica completa della pagina ogni giorno a quest'ora
+};
+const FB_AUT = {
+  apiKey: "AIzaSyAMX2ycf_6P3AcBvarVX4XNKbdposkuqgE",
+  authDomain: "area-personale-autsocc-118-rsm.firebaseapp.com",
+  projectId: "area-personale-autsocc-118-rsm",
+  storageBucket: "area-personale-autsocc-118-rsm.firebasestorage.app",
+  messagingSenderId: "910283994567",
+  appId: "1:910283994567:web:d9c45b5f4b5a83b92595e2"
+};
+const FB_INF = {
+  apiKey: "AIzaSyDCycpsVJus8Mwd-AqaPORZIrFUIyo00VQ",
+  authDomain: "creazione-turni-118.firebaseapp.com",
+  projectId: "creazione-turni-118",
+  storageBucket: "creazione-turni-118.firebasestorage.app",
+  messagingSenderId: "389097635025",
+  appId: "1:389097635025:web:331564551f0e5190a199f0"
+};
+const MONTHS = ["GENNAIO","FEBBRAIO","MARZO","APRILE","MAGGIO","GIUGNO","LUGLIO","AGOSTO","SETTEMBRE","OTTOBRE","NOVEMBRE","DICEMBRE"];
+const SLOT_T = [['00:00','07:00'],['07:00','13:00'],['13:00','20:00'],['20:00','24:00']];
+const BLOCK_INFO = {
+  M: { name:'Mattino',    time:'06:30 – 13:15' },
+  P: { name:'Pomeriggio', time:'12:45 – 20:10' },
+  N: { name:'Notte',      time:'19:45 – 07:20' }
+};
+// Orari diurnisti (codici minuscoli m/p) — stessi cambi data delle app
+const AUT_DIURNO_FROM = '2026-10-06';
+const INF_DIURNO_FROM = '2026-10-01';
+const INF_SPECIAL_SUB = { v:'Ferie residue', r:'Recupero', f:'Congedo ord.', m:'Malattia', p:'Permesso', c:'Perm. studio', pn:'Permesso notte',
+  ng:'Festivo non goduto', nl:'Festivo non lavorato', z:'Sost. coord.', gr:'Gravidanza', pl:'Permesso legge', ps:'Perm. sindacale',
+  k:'Distacco speciale', s:'Perm. sportivo', l:'Perm. lutto', a:'Perm. matrimonio' };
+const INF_WRITTEN_ABS = { gravidanza:1, maternita:1, 'maternità':1, malattia:1, ferie:1, congedo:1, 'congedo ordinario':1, recupero:1, permesso:1 };
+
+// Autisti
+let AUT = { days:{}, repBase:{}, names:[], loadedAt:null };      // dal file Excel
+let autRepOverrides = {};            // "YYYY-MM-DD_slot" -> NOME (portale Richieste)
+let autRepManual = { titolari:{}, fasce:{} };                     // Area Admin
+let autSwaps = {};                   // "YYYY-MM-DD" -> [{a,b}]
+let autBibbia = { autoApplyCambioTurno:false };
+let autRep = { tit:{}, days:{} };    // calcolato: titolari base + fasce effettive (per data ISO)
+// Infermieri
+let INF_NS = null;
+let infSettings = null;              // documento impostazioni (null = non ancora arrivato)
+let infExcel = { days:{}, names:[], tit:{}, loadedAt:null };      // da infermieri.xlsx (solo modalità Excel)
+let infMonthCells = {};              // "YYYY" -> { "NOME__MESE-g": {v,subV} } (modalità solo app)
+let infMonthUnsubs = [];
+let infMonthKeysWatched = '';
+let infRepDoc = { turni:{}, cessioni:{} };
+// Coperture brevi di reperibilità (nuova funzione delle app turni)
+let autCoperture = [];               // collection "reperibilita_coperture" del progetto autisti
+let infCoperture = [];               // campo "coperture" del documento infermieri26_config/reperibilita
+let infRep = { tit:{}, days:{} };
+// Stato sorgenti, per il piè di pagina
+const STATUS = {
+  autXlsx:{ s:'wait', t:null, label:'Excel autisti' },
+  autFb:{ s:'wait', t:null, label:'Firebase autisti' },
+  infCfg:{ s:'wait', t:null, label:'Impostazioni infermieri' },
+  infData:{ s:'wait', t:null, label:'Turni infermieri' },
+  infRep:{ s:'wait', t:null, label:'Reperibilità infermieri' }
+};
+let dbAut = null, dbInf = null, authInf = null;
+let renderTimer = null, lastRenderKey = '', bootDone = false, wakeLock = null, toolsTimer = null;
+
+// ═══ Utilità date ═══════════════════════════════════════════════════════════
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function isoDate(iso){ const p=iso.split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
+function addDays(iso,n){ const d=isoDate(iso); d.setDate(d.getDate()+n); return ymd(d); }
+function slotOfHour(h){ return h>=20?3:h>=13?2:h>=7?1:0; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function dayLabel(iso, today){
+  if(iso===today) return 'Oggi';
+  if(iso===addDays(today,1)) return 'Domani';
+  if(iso===addDays(today,-1)) return 'Ieri';
+  return isoDate(iso).toLocaleDateString('it-IT',{weekday:'short',day:'numeric'});
+}
+function shortDate(iso){ return isoDate(iso).toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'}); }
+
+// ═══ Lettura Excel (stesso formato orizzontale delle app) ═══════════════════
+async function fetchSheetRaw(url){
+  const resp = await fetch(url + '?v=' + Date.now(), { cache:'no-store' });
+  if(!resp.ok) throw new Error('HTTP ' + resp.status);
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(await resp.arrayBuffer());
+  const ws = wb.getWorksheet('Foglio2') || wb.worksheets[0];
+  return sheetToRaw(ws);
+}
+function sheetToRaw(ws){
+  const raw = [];
+  ws.eachRow({ includeEmpty:true }, (row, rn) => {
+    const line = [];
+    row.eachCell({ includeEmpty:true }, (cell, cn) => {
+      let v = cell.value;
+      if(typeof v === 'object' && v !== null) v = v.result !== undefined ? v.result : (v.richText ? v.richText.map(x=>x.text).join('') : '');
+      if(v === null || v === undefined) v = '';
+      let bg = null;
+      if(cell.fill && cell.fill.fgColor){
+        bg = cell.fill.fgColor.argb || null;
+        if(!bg && cell.fill.fgColor.theme !== undefined) bg = 'THEME_' + cell.fill.fgColor.theme;
+      }
+      line[cn] = { v, c:bg };
+    });
+    raw[rn] = line;
+  });
+  return raw;
+}
+// Colonne giorno → data ISO. La riga 1 contiene "MESE . n", la riga dei giorni i numeri.
+function dayColumns(raw, daysRowIdx){
+  const out = [], rowM = raw[1] || [], rowD = raw[daysRowIdx] || [];
+  let year = parseInt((rowM[1] && rowM[1].v) || '') || new Date().getFullYear();
+  const yTxt = rowM.map(c=>String((c&&c.v)||'')).join(' ').match(/\b(20\d\d)\b/); if(yTxt) year = +yTxt[1];
+  let month = -1, last = -1;
+  for(let c = 2; c < rowD.length; c++){
+    const cm = rowM[c];
+    if(cm && typeof cm.v === 'string'){
+      const t = cm.v.toUpperCase(); const mi = MONTHS.findIndex(m => t.includes(m));
+      if(mi !== -1){ if(mi < last) year++; last = mi; month = mi; }
+    }
+    const cd = rowD[c]; if(!cd) continue;
+    const dn = parseInt(cd.v); if(isNaN(dn) || dn <= 0 || dn > 31 || month < 0) continue;
+    out.push({ c, iso: ymd(new Date(year, month, dn)), month, day: dn, year });
+  }
+  return out;
+}
+function isLegendLabel(txt){
+  const u = txt.toUpperCase().replace(/\s+/g,' ');
+  return /\s-\s/.test(u) || /^\S{1,4}\s*-/.test(u) || /CONGEDO|MALATTIA|RESIDUE|P\.S\.|RECUPERO|PERM\.|ASPETTATIVA|FEST\.|DISTACCO|1>7|P\/PN|LEGENDA/.test(u);
+}
+function cellVal(x){ return (x && x.v !== undefined && x.v !== null) ? x.v : ''; }
+
+// ── Autisti: righe operatore + sottoriga, reperibilità righe 29-32 ──
+const AUT_REP_ROWS = [29,30,31,32];
+function parseAutistiRaw(raw){
+  const people = [];
+  for(let r = 3; r < raw.length; r++){
+    const nc = raw[r] && raw[r][1]; const txt = nc && typeof nc.v === 'string' ? nc.v.trim() : '';
+    if(!txt) continue;
+    if(isLegendLabel(txt)) break;               // da qui in giù c'è solo la legenda
+    if(txt.length <= 2) continue;
+    const next = raw[r+1] && raw[r+1][1];
+    const subIdx = (!next || !next.v || String(next.v).trim() === '') ? r + 1 : null;
+    people.push({ name: normAut(txt), idx: r, subIdx });
+  }
+  const cols = dayColumns(raw, 2), days = {}, repBase = {};
+  cols.forEach(({ c, iso }) => {
+    const day = {};
+    people.forEach(p => {
+      const m = (raw[p.idx] && raw[p.idx][c]) || {};
+      const s = p.subIdx && raw[p.subIdx] ? (raw[p.subIdx][c] || {}) : {};
+      day[p.name] = { v: cellVal(m), c: m.c || null, subV: cellVal(s), subC: s.c || null };
+    });
+    days[iso] = day;
+    const f = AUT_REP_ROWS.map(rr => { const x = raw[rr] && raw[rr][c]; const v = x ? cellVal(x) : ''; return v ? normAut(String(v)) : ''; });
+    if(f.some(Boolean)) repBase[iso] = f;
+  });
+  return { days, repBase, names: people.map(p => p.name) };
+}
+function normAut(n){
+  let u = String(n || '').toUpperCase().trim().replace(/\s+/g,' ');
+  if(u.startsWith('MICHELOT')) return 'MICHELOTTI';
+  return u.replace(/\.$/,'');
+}
+
+// ── Infermieri: riga sopra (supV) + riga turno + sottoriga ──
+function parseInfermieriRaw(raw){
+  let daysRow = -1;
+  for(let r = 1; r < raw.length && daysRow < 0; r++){
+    if(!raw[r]) continue; let n = 0;
+    for(let c = 1; c < raw[r].length; c++){ const x = raw[r][c]; if(x && parseInt(x.v) > 0) n++; }
+    if(n > 20) daysRow = r;
+  }
+  if(daysRow < 0) throw new Error('Riga giorni non trovata');
+  const people = [], seen = new Set();
+  for(let r = daysRow + 1; r < raw.length; r++){
+    const nc = raw[r] && raw[r][1]; if(!nc || typeof nc.v !== 'string' || nc.v.trim().length <= 2) continue;
+    const n = nc.v.trim().toUpperCase(); if(n === 'NAN' || seen.has(n) || isLegendLabel(n)) continue;
+    seen.add(n); people.push({ name:n, idx:r });
+  }
+  const cols = dayColumns(raw, daysRow), days = {}, tit = {};
+  cols.forEach(({ c, iso }) => {
+    const day = {};
+    people.forEach(p => {
+      const g = rr => (raw[rr] && raw[rr][c]) ? cellVal(raw[rr][c]) : '';
+      day[p.name] = { v: g(p.idx), subV: g(p.idx + 1), supV: g(p.idx - 1) };
+      if(!tit[iso] && [day[p.name].v, day[p.name].subV, day[p.name].supV].some(isRepStr)) tit[iso] = p.name;
+    });
+    days[iso] = day;
+  });
+  return { days, names: people.map(p => p.name), tit };
+}
+function isRepStr(x){ const s = String(x || '').toLowerCase().replace(/\s+/g,''); return ['m/r','p/r','n/r','s/r','sm/r'].some(t => s.includes(t)); }
+
+// ═══ Interpretazione caselle ═══════════════════════════════════════════════
+// Ritorna { work:[{code:'M'|'P'|'N'|'S', diurno, hours}], abs:'etichetta'|null, rep:bool }
+function colorCategory(argb){
+  if(!argb || argb.length < 8) return null;
+  const r = parseInt(argb.substring(2,4),16), g = parseInt(argb.substring(4,6),16), b = parseInt(argb.substring(6,8),16);
+  if(isNaN(r) || isNaN(g) || isNaN(b)) return null;
+  if(r > g + 40 && r > b + 40) return 'red';
+  if((b > r + 40 && b > g + 40) || (b > r + 40 && g > r + 40)) return 'blue';
+  if(g > r && g > b) return 'green';
+  if(r > b && r > g){ if(g > 180 && g >= r * .8) return 'yellow'; if(g > 80 && g < r * .8) return 'orange'; }
+  if((r > 150 && b > 100) || (r > g && b > g)) return 'pink';
+  return null;
+}
+function hasRealColor(c){ return c && !String(c).startsWith('FFFFFFFF') && c !== 'FF000000' && String(c).length >= 6; }
+function autDiurnoHours(ch, iso){
+  const nuovo = iso >= AUT_DIURNO_FROM;
+  return ch === 'm' ? (nuovo ? '07–13' : '06:30–13:42') : (nuovo ? '13–19' : '13:15–20:27');
+}
+function infDiurnoHours(ch, iso){
+  const nuovo = iso >= INF_DIURNO_FROM;
+  return ch === 'm' ? (nuovo ? '07–13' : '06:30–13:42') : (nuovo ? '13–19' : '13:15–20:27');
+}
+function autInterpret(cell, iso){
+  const out = { work:[], abs:null, rep:false };
+  if(!cell) return out;
+  const val = String(cellVal(cell)).trim(), u = val.toUpperCase();
+  const sub = String(cell.subV === 0 ? '' : cellVal({v:cell.subV})).trim().toUpperCase();
+  if(sub && sub !== '0'){
+    if(sub === 'PN' || sub === 'X') { out.abs = 'Permesso notte'; return out; }
+    if(sub === 'NL') { out.abs = 'Fest. non lavorato'; return out; }
+    if(sub === 'NG') { out.abs = 'Fest. non goduto'; return out; }
+    if(sub === 'M' || sub.startsWith('MAL')) { out.abs = 'Malattia'; return out; }
+    if(sub === 'K') { out.abs = 'Distacco'; return out; }
+    if(sub === 'F' || sub.includes('CONG')) { out.abs = 'Congedo'; return out; }
+    if(sub === 'V' || sub.includes('FER')) { out.abs = 'Ferie'; return out; }
+    if(sub === 'R' || sub.includes('REC')) { out.abs = 'Recupero'; return out; }
+    if(sub === 'P' || sub.includes('PER')) { out.abs = 'Permesso'; return out; }
+  }
+  if(u === 'NL' || u === 'K' || u.startsWith('MAL')) { out.abs = u; return out; }
+  if(hasRealColor(cell.subC)){ const k = colorCategory(cell.subC); if(k === 'red' || k === 'blue') { out.abs = k === 'red' ? 'Malattia' : 'Fest. non goduto'; return out; } }
+  if(hasRealColor(cell.c) && colorCategory(cell.c)) { out.abs = 'Assente'; return out; }
+  if(u === 'F' || u.includes('CONG') || u === 'V' || u.includes('FER') || u.includes('REC') || u.includes('PERM')) { out.abs = 'Assente'; return out; }
+  if(!val || val === '-' || val === '.' || val === '0') return out;
+  out.rep = val.toLowerCase().includes('/r');
+  const clean = u.replace(/\s+/g,'');
+  if(clean === 'M+N' || clean === 'MN'){ out.work.push({code:'M'},{code:'N'}); return out; }
+  const ch = val.charAt(0);
+  if(ch === 'm' || ch === 'p'){ out.work.push({ code: ch === 'm' ? 'M' : 'P', diurno:true, hours: autDiurnoHours(ch, iso) }); return out; }
+  if(ch === 'r') return out;
+  if(u.startsWith('M')) out.work.push({code:'M'});
+  else if(u.startsWith('P')) out.work.push({code:'P'});
+  else if(u.startsWith('N')) out.work.push({code:'N'});
+  else if(u.startsWith('S')) out.work.push({code:'S'});
+  return out;
+}
+function infInterpret(cell, prevCell, iso, customCodes){
+  const out = { work:[], abs:null, rep:false };
+  if(!cell) return out;
+  const prevV = prevCell ? String(cellVal(prevCell)).toUpperCase().replace(/\s+/g,'') : '';
+  const raw = String(cellVal(cell)).trim(), rawU = raw.toUpperCase().replace(/\s+/g,'');
+  const sub = String(cell.subV === 0 ? '' : (cell.subV || '')).trim().toLowerCase();
+  if(cell.customMinutes !== undefined && cell.customMinutes !== null && cell.customMinutes !== '') return out;   // straordinario: non è un turno
+  if(prevV === 'M+N' || prevV === 'MN') { out.work.push({code:'S'}); return out; }
+  if(prevCell && String(prevCell.subV || '').trim().toLowerCase() === 'pn' && (!raw || raw === '-' || /^(r|riposo|s|sm|x)$/i.test(raw))) { out.abs = 'Permesso notte'; return out; }
+  out.rep = [cell.v, cell.subV, cell.supV].some(isRepStr);
+  if(rawU === 'M+N' || rawU === 'MN'){ out.work.push({code:'M'},{code:'N'}); return out; }
+  if(Object.prototype.hasOwnProperty.call(INF_SPECIAL_SUB, sub)) { out.abs = INF_SPECIAL_SUB[sub]; return out; }
+  if(INF_WRITTEN_ABS[raw.toLowerCase()]) { out.abs = raw; return out; }
+  let v = raw; const si = v.indexOf('/'); if(si !== -1) v = v.substring(0, si).trim();
+  if(!v || v === '-') return out;
+  const ch = v.charAt(0);
+  if(ch >= 'a' && ch <= 'z'){
+    const c = v.toLowerCase();
+    if(c === 'm' || c === 'p') out.work.push({ code: c === 'm' ? 'M' : 'P', diurno:true, hours: infDiurnoHours(c, iso) });
+    return out;
+  }
+  const U = v.toUpperCase();
+  const cc = customCodes && customCodes[U];
+  if(cc){
+    if(cc.kind === 'abs') { out.abs = String(cc.label || U).replace(/\|/g,' '); return out; }
+    if(cc.kind === 'work' && cc.from){
+      const h = parseInt(String(cc.from).split(':')[0]);
+      out.work.push({ code: h < 11 ? 'M' : h < 17 ? 'P' : 'N', custom: String(cc.label || U).replace(/\|/g,' '), hours: cc.from + '–' + (cc.to || '') });
+    }
+    return out;
+  }
+  if(U === 'M' || U === 'P' || U === 'N') out.work.push({code:U});
+  else if(U === 'SM' || U === 'S') out.work.push({code:'S'});
+  return out;
+}
+
+// ═══ Reperibilità ══════════════════════════════════════════════════════════
+// AUTISTI — stesso ordine dell'app: Excel → titolari manuali → cessioni portale → fasce manuali admin.
+function buildAutRep(){
+  const tb = {};
+  Object.keys(AUT.repBase).forEach(k => tb[k] = AUT.repBase[k].slice());
+  const ensure = (o,k) => o[k] || (o[k] = ['','','','']);
+  Object.keys(autRepManual.titolari || {}).sort().forEach(iso => {
+    const n = normAut(autRepManual.titolari[iso] || '');
+    const x = ensure(tb, iso); x[2] = n; x[3] = n;
+    const y = ensure(tb, addDays(iso,1)); y[0] = n; y[1] = n;
+  });
+  const days = {};
+  Object.keys(tb).forEach(k => days[k] = tb[k].slice());
+  Object.keys(autRepOverrides).forEach(k => {
+    const i = k.lastIndexOf('_'), iso = k.slice(0,i), s = +k.slice(i+1);
+    if(isNaN(s) || s < 0 || s > 3) return;
+    ensure(days, iso)[s] = autRepOverrides[k];
+  });
+  Object.keys(autRepManual.fasce || {}).forEach(k => {
+    const i = k.lastIndexOf('_'), iso = k.slice(0,i), s = +k.slice(i+1);
+    if(isNaN(s) || s < 0 || s > 3) return;
+    let v = normAut(autRepManual.fasce[k] || '');
+    if(!v) v = s >= 2 ? ((tb[iso]||[])[2] || '') : ((tb[addDays(iso,-1)]||[])[2] || '');
+    ensure(days, iso)[s] = v;
+  });
+  const tit = {};
+  Object.keys(tb).forEach(k => { if(tb[k][2]) tit[k] = tb[k][2]; });
+  autRep = { tit, days };
+}
+// INFERMIERI — titolari: Excel "/R" (solo modalità Excel) < documento reperibilita.turni; poi cessioni.
+function infToOrig(n){
+  const u = String(n || '').toUpperCase().trim().replace(/\.$/,''); if(!u) return '';
+  const names = infAllNames(), over = (infSettings && infSettings.nameOverrides) || {};
+  if(names.includes(u)) return u;
+  const hit = names.find(o => String(over[o] || '').toUpperCase().trim() === u);
+  return hit || u;
+}
+function buildInfRep(){
+  const base = infMode() === 'excel' ? Object.assign({}, infExcel.tit) : {};
+  const tit = Object.assign(base, infRepDoc.turni || {});
+  Object.keys(tit).forEach(k => { if(!tit[k]) delete tit[k]; else tit[k] = infToOrig(tit[k]); });
+  const days = {};
+  const put = (d,s,n) => { (days[d] = days[d] || ['','','',''])[s] = n; };
+  Object.keys(tit).forEach(x => { const t = tit[x], n = addDays(x,1); put(x,2,t); put(x,3,t); put(n,0,t); put(n,1,t); });
+  const ces = infRepDoc.cessioni || {};
+  Object.keys(ces).forEach(k => {
+    const c = ces[k]; if(!c || !c.date || c.slotIndex === undefined || c.slotIndex === null) return;
+    const p = String(c.date).split('-'); if(p.length !== 3) return;
+    const iso = ymd(new Date(+p[0], +p[1]-1, +p[2])), s = +c.slotIndex, who = infToOrig(c.newDriver);
+    if(who && s >= 0 && s < 4) put(iso, s, who);
+  });
+  infRep = { tit, days };
+}
+function titolareOf(R, iso, s){ return s >= 2 ? (R.tit[iso] || '') : (R.tit[addDays(iso,-1)] || ''); }
+
+// ═══ Infermieri: sorgente dati ═════════════════════════════════════════════
+function infMode(){ return infSettings && infSettings.dataSource === 'firebase' ? 'firebase' : 'excel'; }
+function infActiveYear(){ return (infSettings && +infSettings.activeYear) || new Date().getFullYear(); }
+function infOpConfig(){
+  const c = (infSettings && infSettings.operatorConfig) || {};
+  return { hidden: c.hidden || {}, removed: c.removed || {}, added: Array.isArray(c.added) ? c.added : [], baseNames: Array.isArray(c.baseNames) ? c.baseNames : [], order: Array.isArray(c.order) ? c.order : [] };
+}
+function infAllNames(){
+  const oc = infOpConfig();
+  const base = infMode() === 'firebase' ? oc.baseNames.map(n => String(n).toUpperCase()) : infExcel.names.slice();
+  oc.added.forEach(o => { const n = String((o && o.name) || '').trim().toUpperCase(); if(n && !base.includes(n)) base.push(n); });
+  return base;
+}
+function infVisibleNames(today){
+  const oc = infOpConfig();
+  return infAllNames().filter(n => {
+    if(oc.removed[n]) return false;
+    const h = oc.hidden[n]; if(h && !(h.until && today > h.until)) return false;
+    return true;
+  });
+}
+function infDisplay(orig){ const o = (infSettings && infSettings.nameOverrides) || {}; return String(o[orig] || orig || '').toUpperCase(); }
+function infCellKey(orig, iso, withYearFor){
+  const d = isoDate(iso), y = d.getFullYear();
+  const k = orig + '__' + MONTHS[d.getMonth()] + '-' + d.getDate();
+  return (withYearFor && y !== withYearFor) ? k + '@' + y : k;
+}
+function infCell(orig, iso){
+  if(infMode() === 'firebase'){
+    const y = isoDate(iso).getFullYear();
+    return (infMonthCells[y] || {})[infCellKey(orig, iso, null)] || null;
+  }
+  const ov = ((infSettings && infSettings.manualOverrides) || {})[infCellKey(orig, iso, infActiveYear())];
+  const base = (infExcel.days[iso] || {})[orig] || null;
+  if(ov) return Object.assign({}, base || {}, { v: ov.v, subV: ov.subV || '', customMinutes: ov.customMinutes });
+  return base;
+}
+
+// ═══ Composizione turni ════════════════════════════════════════════════════
+function autWorkers(iso, code){
+  const day = AUT.days[iso]; if(!day) return null;
+  const swaps = autBibbia.autoApplyCambioTurno ? (autSwaps[iso] || []) : [];
+  const res = [];
+  AUT.names.forEach(n => {
+    let src = n;
+    for(const s of swaps){ if(s.a === n){ src = s.b; break; } if(s.b === n){ src = s.a; break; } }
+    const info = autInterpret(day[src], iso);
+    info.work.forEach(w => { if(w.code === code) res.push({ name:n, diurno:!!w.diurno, hours:w.hours || '', rep: info.rep && code !== 'N' }); });
+  });
+  return res;
+}
+function infWorkers(iso, code, today){
+  const names = infVisibleNames(today);
+  const anyData = infMode() === 'firebase' ? !!infMonthCells[isoDate(iso).getFullYear()] : !!infExcel.days[iso];
+  if(!anyData || !names.length) return null;
+  const cc = (infSettings && infSettings.customCodes) || {};
+  const res = [];
+  names.forEach(n => {
+    const info = infInterpret(infCell(n, iso), infCell(n, addDays(iso,-1)), iso, cc);
+    info.work.forEach(w => { if(w.code === code) res.push({ name: infDisplay(n), diurno:!!w.diurno, hours:w.hours || '', custom:w.custom || '' }); });
+  });
+  return res;
+}
+function currentBlock(now){
+  const h = now.getHours(), iso = ymd(now);
+  if(h < 7) return { iso: addDays(iso,-1), t:'N' };
+  if(h < 13) return { iso, t:'M' };
+  if(h < 20) return { iso, t:'P' };
+  return { iso, t:'N' };
+}
+function nextBlock(b){ return b.t === 'M' ? { iso:b.iso, t:'P' } : b.t === 'P' ? { iso:b.iso, t:'N' } : { iso:addDays(b.iso,1), t:'M' }; }
+
+// ═══ Disegno ═══════════════════════════════════════════════════════════════
+// ═══ Cosa mostrare (salvato su questo schermo) ═════════════════════════════
+const VIEW_DEFAULT = { theme:'auto', nightFrom:20, nightTo:7, clock:true, clockStyle:'digital', seconds:true, date:true, reps:true, shifts:true, nShifts:4, alert:true, alertMin:30, rubrica:true };
+let VIEW = Object.assign({}, VIEW_DEFAULT);
+function loadView(){
+  try { VIEW = Object.assign({}, VIEW_DEFAULT, JSON.parse(localStorage.getItem('monitor118_view') || '{}')); } catch(e) {}
+  // Parametri nell'indirizzo (hanno la precedenza, non vengono salvati). Es.: monitor.html?tema=notte&turni=3&rubrica=0
+  try {
+    const q = new URLSearchParams(location.search), on = v => !/^(0|no|off|false)$/i.test(v);
+    const map = { orologio:'clock', secondi:'seconds', data:'date', reperibili:'reps', avviso:'alert', rubrica:'rubrica' };
+    Object.keys(map).forEach(k => { if(q.has(k)) VIEW[map[k]] = on(q.get(k)); });
+    if(q.has('turni')) { const n = parseInt(q.get('turni')); VIEW.shifts = n > 0; if(n > 0) VIEW.nShifts = Math.min(6, n); }
+    if(q.has('tema')) VIEW.theme = { notte:'night', scuro:'night', chiaro:'light', auto:'auto', automatico:'auto' }[q.get('tema').toLowerCase()] || VIEW.theme;
+    if(q.has('stile')) VIEW.clockStyle = /^anal/i.test(q.get('stile')) ? 'analog' : 'digital';
+    if(q.has('minuti')) VIEW.alertMin = Math.max(5, Math.min(120, parseInt(q.get('minuti')) || 30));
+  } catch(e) {}
+}
+function saveView(){ try { localStorage.setItem('monitor118_view', JSON.stringify(VIEW)); } catch(e) {} }
+function applyView(){
+  if(!VIEW.clock && !VIEW.reps && !VIEW.shifts) VIEW.clock = true;   // qualcosa deve restare
+  CFG.BLOCKS = Math.max(1, Math.min(6, +VIEW.nShifts || 4));
+  const b = document.body.classList;
+  b.toggle('no-clock', !VIEW.clock); b.toggle('analog', VIEW.clockStyle === 'analog');
+  b.toggle('no-seconds', !VIEW.seconds); b.toggle('no-date', !VIEW.date);
+  b.toggle('no-reps', !VIEW.reps); b.toggle('no-shifts', !VIEW.shifts);
+  b.toggle('no-data', !VIEW.reps && !VIEW.shifts);
+  b.toggle('rub', !!VIEW.rubrica);
+  applyTheme(new Date());
+  renderAll();
+}
+// Notte: scelta fissa oppure automatica in base all'ora (di default dalle 20:00 alle 07:00)
+function isNightNow(now){
+  if(VIEW.theme === 'night') return true;
+  if(VIEW.theme === 'light') return false;
+  const h = now.getHours(), a = +VIEW.nightFrom, b = +VIEW.nightTo;
+  return a > b ? (h >= a || h < b) : (h >= a && h < b);
+}
+function applyTheme(now){
+  const night = isNightNow(now);
+  if(document.body.classList.contains('night') === night) return;
+  document.body.classList.toggle('night', night);
+  const m = document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', night ? '#06080d' : '#f4f5f7');
+}
+function setView(k, v){ VIEW[k] = v; saveView(); applyView(); renderPanel(); }
+
+// ═══ Orologio ══════════════════════════════════════════════════════════════
+let clockState = null, lastSecShown = -1;
+function buildClock(){
+  const bar = document.getElementById('secbar');
+  if(bar && !bar.children.length) bar.innerHTML = Array.from({ length:60 }, (_, i) => `<i class="${i % 5 === 0 ? 'q' : ''}"></i>`).join('');
+  const svg = document.getElementById('clock-svg'); if(!svg || svg.children.length) return;
+  let ticks = '', nums = '';
+  for(let i = 0; i < 60; i++){
+    const big = i % 5 === 0;
+    ticks += `<line x1="100" y1="8" x2="100" y2="${big ? 18 : 12.5}" style="stroke:${big ? 'var(--hand)' : 'var(--tick)'}" stroke-width="${big ? 2.4 : 1}" stroke-linecap="round" transform="rotate(${i * 6} 100 100)"/>`;
+  }
+  for(let h = 1; h <= 12; h++){
+    const a = h * 30 * Math.PI / 180, x = 100 + 70 * Math.sin(a), y = 100 - 70 * Math.cos(a);
+    nums += `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-family="Inter Tight, system-ui, sans-serif" font-weight="600" font-size="15" style="fill:var(--hand)">${h}</text>`;
+  }
+  svg.innerHTML = `<circle cx="100" cy="100" r="96" style="fill:var(--face)"/><circle cx="100" cy="100" r="95.5" fill="none" style="stroke:var(--line)" stroke-width="1"/>${ticks}${nums}
+    <g class="hand hour" id="h-hour"><line x1="100" y1="112" x2="100" y2="54" style="stroke:var(--hand)" stroke-width="5.5" stroke-linecap="round"/></g>
+    <g class="hand min" id="h-min"><line x1="100" y1="114" x2="100" y2="28" style="stroke:var(--hand)" stroke-width="3.6" stroke-linecap="round"/></g>
+    <g class="hand sec" id="h-sec"><line x1="100" y1="122" x2="100" y2="16" style="stroke:var(--red)" stroke-width="1.4" stroke-linecap="round"/><circle cx="100" cy="100" r="4.2" style="fill:var(--red)"/><circle cx="100" cy="100" r="1.6" style="fill:var(--face)"/></g>`;
+}
+function setAnalog(now){
+  const s = now.getSeconds(), m = now.getMinutes(), h = now.getHours() % 12;
+  const target = { sec: s * 6, min: m * 6, hour: h * 30 + m * .5 };
+  const hands = { sec: document.getElementById('h-sec'), min: document.getElementById('h-min'), hour: document.getElementById('h-hour') };
+  if(!hands.sec) return;
+  const jump = (k, deg) => { hands[k].classList.add('no-anim'); hands[k].style.transform = `rotate(${deg}deg)`; requestAnimationFrame(() => requestAnimationFrame(() => hands[k].classList.remove('no-anim'))); };
+  if(!clockState){ clockState = Object.assign({}, target); Object.keys(hands).forEach(k => jump(k, target[k])); return; }
+  Object.keys(target).forEach(k => {   // i gradi crescono sempre: a :00 la lancetta non torna indietro
+    const cur = clockState[k], base = ((cur % 360) + 360) % 360;
+    let delta = target[k] - base; if(delta < -180) delta += 360; if(delta > 180) delta -= 360;
+    if(delta === 0) return;
+    clockState[k] = cur + delta;
+    if((k === 'sec' && Math.abs(delta) > 30) || Math.abs(delta) > 60) jump(k, clockState[k]);
+    else hands[k].style.transform = `rotate(${clockState[k]}deg)`;
+  });
+}
+function setDigital(now){
+  const p2 = n => String(n).padStart(2,'0'), s = now.getSeconds();
+  document.getElementById('dh').textContent = p2(now.getHours());
+  document.getElementById('dm').textContent = p2(now.getMinutes());
+  const ds = document.getElementById('ds');
+  if(s !== lastSecShown){
+    ds.textContent = p2(s); ds.classList.remove('tick'); void ds.offsetWidth; ds.classList.add('tick');
+    const bar = document.getElementById('secbar');
+    if(bar) Array.prototype.forEach.call(bar.children, (el, i) => { el.classList.toggle('on', i < s); el.classList.toggle('cur', i === s); });
+    lastSecShown = s;
+  }
+  document.getElementById('adigital').innerHTML = p2(now.getHours()) + ':' + p2(now.getMinutes()) + (VIEW.seconds ? '<span class="s">:' + p2(s) + '</span>' : '');
+}
+
+// ═══ Coperture brevi di reperibilità ══════════════════════════════════════
+// Formato atteso (scritto dalle app turni): { date:'AAAA-MM-GG', from:'HH:MM', to:'HH:MM', titolare:'NOME', sostituto:'NOME' }
+// Se "to" è prima di "from" la copertura finisce il giorno dopo. annullata:true la esclude.
+function atTime(iso, hm){ const p = String(hm || '').split(/[:.]/).map(Number); const d = isoDate(iso); d.setHours(p[0] || 0, p[1] || 0, 0, 0); return d; }
+function normCopertura(x, id, normName){
+  if(!x || typeof x !== 'object' || x.annullata || x.cancelled || x.deleted) return null;
+  let start = null, end = null, from = x.from || x.oraInizio || x.dalle || '', to = x.to || x.oraFine || x.alle || '';
+  const date = String(x.date || x.data || '').slice(0, 10);
+  if(date && from && to){ start = atTime(date, from); end = atTime(date, to); if(end <= start) end.setDate(end.getDate() + 1); }
+  else if(x.start && x.end){ start = new Date(x.start); end = new Date(x.end); }
+  const sost = x.sostituto || x.newDriver || x.copertoDa || '';
+  if(!start || !end || isNaN(start) || isNaN(end) || !sost) return null;
+  const hm = d => String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  return { id, start, end, from: hm(start), to: hm(end), sostituto: normName(sost), titolare: normName(x.titolare || x.originalDriver || ''), note: x.note || '' };
+}
+function copActive(list, now, who, tit){
+  return list.filter(c => c.start <= now && now < c.end && (!c.titolare || c.titolare === who || c.titolare === tit))
+    .sort((a, b) => b.start - a.start)[0] || null;
+}
+function copUpcoming(list, now){
+  const lim = new Date(now.getTime() + 3 * 3600000);
+  return list.filter(c => c.start > now && c.start <= lim).sort((a, b) => a.start - b.start)[0] || null;
+}
+
+// ═══ Arrivo del prossimo turno (avviso) ═══════════════════════════════════
+const TURNISTI_START = { M:'06:30', P:'12:45', N:'19:45' };
+function infTurnistaStart(t){
+  const so = infSettings && infSettings.scheduleOverride && infSettings.scheduleOverride.SCHEDULE;
+  const m = so && String(so[t] || '').match(/(\d{1,2})[:.](\d{2})/);
+  return m ? m[1].padStart(2,'0') + ':' + m[2] : TURNISTI_START[t];
+}
+function startHM(p, t, kind){
+  if(p.hours && (p.diurno || p.custom)){
+    const m = String(p.hours).match(/^(\d{1,2})(?:[:.](\d{2}))?/);
+    if(m) return m[1].padStart(2,'0') + ':' + (m[2] || '00');
+  }
+  return kind === 'inf' ? infTurnistaStart(t) : TURNISTI_START[t];
+}
+function nextArrival(now){
+  const today = ymd(now), ev = {};
+  [today, addDays(today,1)].forEach(d => ['M','P','N'].forEach(t => {
+    [['aut', autWorkers(d, t)], ['inf', infWorkers(d, t, today)]].forEach(([kind, list]) => {
+      (list || []).forEach(p => {
+        const dt = atTime(d, startHM(p, t, kind)); if(dt <= now) return;
+        const k = dt.getTime(), e = ev[k] = ev[k] || { dt, iso:d, t, aut:[], inf:[], diurni:0, total:0 };
+        e[kind].push(p.name); e.total++; if(p.diurno) e.diurni++;
+      });
+    });
+  }));
+  let keys = Object.keys(ev).map(Number).sort((a, b) => a - b);
+  if(!keys.length){   // nessun dato: orari standard dei turnisti
+    [today, addDays(today,1)].forEach(d => Object.keys(TURNISTI_START).forEach(t => { const dt = atTime(d, TURNISTI_START[t]); if(dt > now) ev[dt.getTime()] = { dt, iso:d, t, aut:[], inf:[], diurni:0, total:0 }; }));
+    keys = Object.keys(ev).map(Number).sort((a, b) => a - b);
+  }
+  return keys.length ? ev[keys[0]] : null;
+}
+let currentArrival = null;      // arrivo entro la soglia (null = c'è tempo)
+let arrivalCache = null;        // prossimo arrivo, ricalcolato ogni minuto o quando cambiano i dati
+let testAlert = null;           // prova dalle impostazioni: { dt finto, until }
+function startTestAlert(){
+  const now = new Date();
+  testAlert = { dt: new Date(now.getTime() + Math.max(1, (+VIEW.alertMin || 30) - 6) * 60000 + 59000), until: now.getTime() + 60000 };
+  closePanel(); renderAll();
+}
+function stopTestAlert(){ testAlert = null; renderAll(); renderPanel(); }
+function arrivalFor(now){
+  if(testAlert){
+    if(now.getTime() > testAlert.until) testAlert = null;
+    else { const real = arrivalCache || nextArrival(now) || { iso: ymd(now), t:'N', aut:[], inf:[], diurni:0, total:0 }; return Object.assign({}, real, { dt: testAlert.dt, test:true }); }
+  }
+  if(!arrivalCache || arrivalCache.dt <= now) arrivalCache = nextArrival(now);
+  return arrivalCache;
+}
+function renderAlert(now){
+  const el = document.getElementById('alert');
+  const a = arrivalFor(now);
+  const ms = a ? a.dt - now : Infinity;
+  const soon = !!a && ms > 0 && ms <= (+VIEW.alertMin || 30) * 60000;
+  currentArrival = soon ? a : null;
+  // bordo dei reperibili: verde se c'è tempo, rosso se il cambio è vicino
+  ['rep-aut','rep-inf'].forEach(id => { const r = document.getElementById(id); if(r){ r.classList.toggle('soon', soon); r.classList.toggle('safe', !!a && !soon); } });
+  const on = soon && (VIEW.alert || a.test);
+  el.classList.toggle('on', !!on);
+  if(!on) return;
+  const sec = Math.ceil(ms / 1000), mm = Math.floor(sec / 60), ss = sec % 60;
+  const hm = String(a.dt.getHours()).padStart(2,'0') + ':' + String(a.dt.getMinutes()).padStart(2,'0');
+  const what = a.total && a.diurni === a.total ? 'i diurnisti' : 'il turno di ' + BLOCK_INFO[a.t].name.toLowerCase();
+  const who = [a.aut.length ? `<strong>Autisti:</strong> ${esc(a.aut.join(', '))}` : '', a.inf.length ? `<strong>Infermieri:</strong> ${esc(a.inf.join(', '))}` : ''].filter(Boolean).join(' · ');
+  document.getElementById('al-t').innerHTML = `${a.test ? '<span class="al-test">PROVA</span>' : ''}Cambio turno tra <b>${mm ? mm + ' min ' : ''}${String(ss).padStart(2,'0')} s</b>`;
+  document.getElementById('al-s').innerHTML = `Alle <strong>${hm}</strong> arriva ${what}${who ? ' — ' + who : ''}.<br>I reperibili hanno ${esc(VIEW.alertMin)} minuti per arrivare: valuta prima di chiamarli.`;
+}
+
+// ═══ Reperibili e turni ═══════════════════════════════════════════════════
+function renderRep(el, kind, now){
+  const R = kind === 'aut' ? autRep : infRep;
+  const disp = kind === 'aut' ? (n => n) : infDisplay;
+  const cops = kind === 'aut' ? autCoperture : infCoperture;
+  const today = ymd(now), slot = slotOfHour(now.getHours());
+  const base = (R.days[today] || [])[slot] || '';
+  const tit = titolareOf(R, today, slot);
+  const loaded = kind === 'aut' ? (!!AUT.loadedAt || Object.keys(R.tit).length > 0) : infSettings !== null;
+  const cop = copActive(cops, now, base, tit), next = copUpcoming(cops, now);
+  const who = cop ? cop.sostituto : base;
+  const extra = [];
+  if(cop) extra.push(`<span class="cop-badge">Copertura momentanea · fino alle ${cop.to}</span>`, `<span>al posto di ${esc(disp(cop.titolare || base))}</span>`);
+  else if(base && tit && base !== tit) extra.push(`<span>al posto di ${esc(disp(tit))}</span>`);
+  if(next && (!cop || next.id !== cop.id)) extra.push(`<span class="cop-next">Copertura ${next.from}–${next.to}: ${esc(disp(next.sostituto))}</span>`);
+  el.classList.toggle('cov', !!cop);
+  el.classList.toggle('soon', !!currentArrival); el.classList.toggle('safe', !currentArrival && !!arrivalCache);
+  rubLive[kind] = who;
+  const rb = who ? rubFind(kind, who) : null;
+  el.innerHTML = `<div class="rep-l">${kind === 'aut' ? 'Autista' : 'Infermiere'}</div>
+    <div><div class="rep-n${who ? '' : ' none'}">${who ? esc(disp(who)) : (loaded ? 'Nessuno' : '…')}${rb && rb.codice ? `<span class="code">${esc(rb.codice)}</span>` : ''}</div><div class="rep-x">${extra.join('')}</div></div>`;
+}
+function groupHtml(kind, list){
+  let body;
+  if(list === null) body = `<div class="p empty"><span>non disponibile</span></div>`;
+  else if(!list.length) body = `<div class="p empty"><span>nessuno</span></div>`;
+  else body = list.sort((a,b) => (a.diurno - b.diurno) || a.name.localeCompare(b.name))
+    .map(p => `<div class="p"><span>${esc(p.name)}</span>${p.diurno ? `<em>${esc(p.hours)}</em>` : p.custom ? `<em>${esc(p.custom)}</em>` : ''}</div>`).join('');
+  return `<div class="grp ${kind}">${body}</div>`;
+}
+function renderBlocks(now){
+  const today = ymd(now);
+  let b = currentBlock(now);
+  const out = [];
+  for(let i = 0; i < CFG.BLOCKS; i++){
+    const info = BLOCK_INFO[b.t];
+    const dl = (b.t === 'N' && b.iso === addDays(today,-1)) ? 'Stanotte' : dayLabel(b.iso, today);
+    const arriving = currentArrival && currentArrival.iso === b.iso && currentArrival.t === b.t && i > 0;
+    out.push(`<div class="blk ${b.t}${i === 0 ? ' cur' : ''}${arriving ? ' arriving' : ''}">
+      <div class="blk-h">
+        <div class="blk-d"><span>${esc(dl)}</span>${i === 0 ? '<span class="now">in corso</span>' : arriving ? '<span class="arr">in arrivo</span>' : ''}</div>
+        <div class="blk-t">${info.name}</div>
+        <div class="blk-time">${info.time}</div>
+      </div>
+      ${groupHtml('aut', autWorkers(b.iso, b.t))}
+      ${groupHtml('inf', infWorkers(b.iso, b.t, today))}
+    </div>`);
+    b = nextBlock(b);
+  }
+  const el = document.getElementById('blocks');
+  el.style.setProperty('--nblocks', CFG.BLOCKS);
+  el.innerHTML = out.join('');
+}
+
+// ═══ Rubrica codici (tabella autisti / infermieri) ════════════════════════
+// Salvata su Firebase (progetto autisti, admin_config/monitor_rubrica) e quindi uguale su tutti gli schermi.
+// I nomi si collegano ai turni dal cognome (prima parola): "Barbieri Matteo" ↔ BARBIERI.
+const RUBRICA_DEFAULT = {
+  autisti: [['Barbieri Matteo','3a'],['Berardi Pierluigi','8a'],['Bianchi Stefano','5a'],['Fabbri Nicola','1a'],['Ghiotti Gabriele','6a'],
+    ['Michelotti Yan','4a'],['Pazzaglia Stefano','10a'],['Sarti Michele','2a'],['Volpini Filippo','7a']].map(([nome, codice]) => ({ nome, codice })),
+  infermieri: [['Angelini Stefano','21i'],['Bedetti Matteo','2i'],['Canti Anna Helena','14i'],['Capicchioni Laura','23i'],['Castellani Giorgia','13i'],
+    ['Casadei Marco','20i'],['Chiaruzzi Eleonora','5i'],['Gatti Gian Marco','17i'],['Giancecchi Dario','16i'],['Gozi Francesco','12i'],['Lepri Andrea','25i'],
+    ['Macherozzi Lucia','10i'],['Mini Stefania','11i'],['Morganti Flavio','4i'],['Mosca Maria Pia','18i'],['Mosconi Matteo','22i'],['Pacelli Ludovica','9i'],
+    ['Palumbo Stefano','24i'],['Podeschi Federico','15i'],['Sharov Savva','7i'],['Tiburzi Sara','8i'],['Ticchi Federica','3i'],['Tini Clelia','19i']].map(([nome, codice]) => ({ nome, codice }))
+};
+let RUBRICA = JSON.parse(JSON.stringify(RUBRICA_DEFAULT));
+let rubEdit = null;               // copia in modifica nell'editor
+let rubSource = 'default';        // 'firebase' | 'local' | 'default'
+function rubNorm(s){ return String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z' ]/g,' ').replace(/\s+/g,' ').trim(); }
+function rubClean(list){ return (Array.isArray(list) ? list : []).map(x => ({ nome: String((x && x.nome) || '').trim(), codice: String((x && x.codice) || '').trim() })).filter(x => x.nome); }
+function rubSetFrom(d, src){
+  if(!d || (!Array.isArray(d.autisti) && !Array.isArray(d.infermieri))) return false;
+  RUBRICA = { autisti: rubClean(d.autisti), infermieri: rubClean(d.infermieri) }; rubSource = src; return true;
+}
+function rubLoadLocal(){ try { const d = JSON.parse(localStorage.getItem('monitor118_rubrica') || 'null'); if(d) rubSetFrom(d, 'local'); } catch(e) {} }
+function rubFind(kind, shiftName){
+  const key = rubNorm(shiftName); if(!key) return null;
+  const list = RUBRICA[kind === 'aut' ? 'autisti' : 'infermieri'] || [];
+  return list.find(e => rubNorm(e.nome) === key) || list.find(e => rubNorm(e.nome).startsWith(key + ' ')) || list.find(e => rubNorm(e.nome).split(' ')[0] === key.split(' ')[0]) || null;
+}
+// chi è reperibile adesso (copertura momentanea compresa), per gruppo
+let rubLive = { aut:'', inf:'' };
+function renderRubrica(){
+  const el = document.getElementById('rubrica'); if(!el) return;
+  const sec = (kind, title, list) => {
+    const live = rubLive[kind] ? rubFind(kind, rubLive[kind]) : null;
+    const rows = list.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'it')).map(e =>
+      `<div class="rb-r${live === e || (live && live.nome === e.nome) ? ' live' : ''}"><span class="rb-c">${esc(e.codice)}</span><span class="rb-n">${esc(e.nome)}</span></div>`).join('');
+    return `<div class="rb-sec ${kind}"><div class="rb-h">${title}</div>${rows || '<div class="rb-r"><span></span><span class="rb-n" style="color:var(--tx3)">vuota</span></div>'}</div>`;
+  };
+  const n = RUBRICA.autisti.length + RUBRICA.infermieri.length + 4;
+  el.style.setProperty('--rows', n);
+  el.innerHTML = sec('aut', 'Autisti', RUBRICA.autisti) + sec('inf', 'Infermieri', RUBRICA.infermieri);
+}
+function startRubricaListener(){
+  if(!dbAut) return;
+  dbAut.collection('admin_config').doc('monitor_rubrica').onSnapshot(doc => {
+    if(doc.exists && rubSetFrom(doc.data(), 'firebase')) { try { localStorage.setItem('monitor118_rubrica', JSON.stringify(RUBRICA)); } catch(e) {} }
+    scheduleRender();
+  }, e => console.warn('Rubrica non letta da Firebase:', e));
+}
+// ── Editor ──
+function openRubEditor(){
+  rubEdit = JSON.parse(JSON.stringify(RUBRICA));
+  closePanel(); renderRubEditor(); document.getElementById('rubed').classList.add('open');
+}
+function closeRubEditor(){ document.getElementById('rubed').classList.remove('open'); rubEdit = null; }
+function rubEdSet(list, i, field, v){ rubEdit[list][i][field] = v; }
+function rubEdAdd(list){ rubEdit[list].push({ nome:'', codice:'' }); renderRubEditor(); const ins = document.querySelectorAll(`#re-${list} input.re-n`); if(ins.length) ins[ins.length - 1].focus(); }
+function rubEdDel(list, i){ rubEdit[list].splice(i, 1); renderRubEditor(); }
+function rubEdReset(){ if(confirm('Ripristinare la tabella originale? Le modifiche non salvate si perdono.')) { rubEdit = JSON.parse(JSON.stringify(RUBRICA_DEFAULT)); renderRubEditor(); } }
+function renderRubEditor(){
+  const col = (list, title) => `<div class="re-col ${list === 'autisti' ? 'aut' : 'inf'}"><div class="re-h">${title}<span>${rubEdit[list].length}</span></div>
+    <div class="re-list" id="re-${list}">${rubEdit[list].map((e, i) => `<div class="re-row">
+      <input class="re-n" value="${esc(e.nome)}" placeholder="Cognome Nome" oninput="rubEdSet('${list}',${i},'nome',this.value)">
+      <input class="re-c" value="${esc(e.codice)}" placeholder="cod." oninput="rubEdSet('${list}',${i},'codice',this.value)">
+      <button class="re-x" onclick="rubEdDel('${list}',${i})" aria-label="Elimina">✕</button></div>`).join('')}</div>
+    <button class="re-add" onclick="rubEdAdd('${list}')">+ Aggiungi</button></div>`;
+  document.getElementById('rubed-box').innerHTML = `<h2>Rubrica codici</h2>
+    <p class="hint">Il nome deve iniziare col cognome come nei turni (es. «Barbieri Matteo»): così il reperibile si evidenzia da solo. Il salvataggio vale per tutti gli schermi.</p>
+    <div class="re-cols">${col('autisti','Autisti')}${col('infermieri','Infermieri')}</div>
+    <div class="re-msg" id="re-msg"></div>
+    <div class="pn-foot"><button onclick="rubEdReset()">Ripristina originale</button><div style="display:flex;gap:8px"><button onclick="closeRubEditor()">Annulla</button><button class="pri" id="re-save" onclick="rubEdSave()">Salva</button></div></div>`;
+}
+async function rubEdSave(){
+  const data = { autisti: rubClean(rubEdit.autisti).sort((a, b) => a.nome.localeCompare(b.nome, 'it')), infermieri: rubClean(rubEdit.infermieri).sort((a, b) => a.nome.localeCompare(b.nome, 'it')) };
+  const btn = document.getElementById('re-save'), msg = document.getElementById('re-msg');
+  btn.disabled = true; btn.textContent = 'Salvo…';
+  RUBRICA = data; try { localStorage.setItem('monitor118_rubrica', JSON.stringify(data)); } catch(e) {}
+  renderAll();
+  try {
+    if(!dbAut) throw new Error('Firebase non disponibile');
+    await dbAut.collection('admin_config').doc('monitor_rubrica').set(Object.assign({}, data, { updatedAt: new Date().toISOString() }));
+    rubSource = 'firebase'; closeRubEditor();
+  } catch(e){
+    console.error('Salvataggio rubrica:', e); rubSource = 'local';
+    msg.textContent = 'Salvata solo su questo schermo: Firebase non ha accettato la scrittura (' + (e.code || e.message) + ').';
+    btn.disabled = false; btn.textContent = 'Riprova';
+  }
+}
+
+// ═══ Pannello impostazioni ════════════════════════════════════════════════
+function swHtml(k){ return `<label class="sw"><input type="checkbox" ${VIEW[k] ? 'checked' : ''} onchange="setView('${k}', this.checked)"><span></span></label>`; }
+function segHtml(k, opts){ return `<div class="seg">${opts.map(([v, l]) => `<button class="${String(VIEW[k]) === String(v) ? 'on' : ''}" onclick="setView('${k}', ${typeof v === 'number' ? v : `'${v}'`})">${l}</button>`).join('')}</div>`; }
+function renderPanel(){
+  const pn = document.getElementById('pn'); if(!pn) return;
+  pn.innerHTML = `<h2>Cosa mostrare</h2><p class="hint">Le scelte restano salvate su questo schermo.</p>
+    <h3>Tema</h3>
+    <div class="row"><span>Modalità</span>${segHtml('theme', [['light','Chiaro'],['night','Notte'],['auto','Automatico']])}</div>
+    ${VIEW.theme === 'auto' ? `<div class="row"><span>Notte dalle</span>${segHtml('nightFrom', [[18,'18'],[19,'19'],[20,'20'],[21,'21'],[22,'22']])}</div>
+    <div class="row"><span>fino alle</span>${segHtml('nightTo', [[5,'5'],[6,'6'],[7,'7'],[8,'8']])}</div>` : ''}
+    <h3>Orologio</h3>
+    <div class="row"><span>Orologio</span>${swHtml('clock')}</div>
+    <div class="row"><span>Stile</span>${segHtml('clockStyle', [['digital','Digitale'],['analog','Analogico']])}</div>
+    <div class="row"><span>Secondi</span>${swHtml('seconds')}</div>
+    <div class="row"><span>Data</span>${swHtml('date')}</div>
+    <h3>Reperibilità e turni</h3>
+    <div class="row"><span>Reperibili ora</span>${swHtml('reps')}</div>
+    <div class="row"><span>Prossimi turni</span>${swHtml('shifts')}</div>
+    <div class="row"><span>Quanti turni</span>${segHtml('nShifts', [[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6']])}</div>
+    <h3>Rubrica codici</h3>
+    <div class="row"><span>Tabella codici<small>Il reperibile attuale si evidenzia da solo</small></span>${swHtml('rubrica')}</div>
+    <div class="row"><span>Modifica nomi e codici<small>${rubSource === 'firebase' ? 'Condivisa su tutti gli schermi' : rubSource === 'local' ? 'Salvata solo su questo schermo' : 'Tabella originale'}</small></span><div class="seg"><button class="on" onclick="openRubEditor()">Modifica</button></div></div>
+    <h3>Avviso cambio turno</h3>
+    <div class="row"><span>Avviso in arrivo<small>Segnale rosso prima che arrivi il turno successivo</small></span>${swHtml('alert')}</div>
+    <div class="row"><span>Minuti prima</span>${segHtml('alertMin', [[15,'15'],[20,'20'],[30,'30'],[45,'45'],[60,'60']])}</div>
+    <div class="row" style="flex-direction:column;align-items:stretch"><span>Prova<small>Simula per 1 minuto un cambio turno a meno di ${esc(VIEW.alertMin)} minuti: compaiono la fascia rossa e i bordi rossi.</small></span>
+      ${testAlert ? `<button class="pn-test on" onclick="stopTestAlert()">Ferma la prova</button>` : `<button class="pn-test" onclick="startTestAlert()">Avvia prova avviso</button>`}</div>
+    <div class="pn-foot"><div style="display:flex;gap:8px"><button onclick="toggleFullscreen()">Schermo intero</button><button onclick="reloadAll()">Aggiorna dati</button></div><button class="pri" onclick="closePanel()">Fatto</button></div>`;
+}
+function openPanel(){ renderPanel(); document.getElementById('panel').classList.add('open'); }
+function closePanel(){ document.getElementById('panel').classList.remove('open'); }
+
+// ═══ Ciclo di disegno ═════════════════════════════════════════════════════
+function renderStatus(){
+  document.getElementById('status').innerHTML = Object.values(STATUS).filter(s => s.s === 'err')
+    .map(s => `<span title="${esc(s.msg || '')}">⚠ ${esc(s.label)} non raggiungibile</span>`).join('');
+}
+function setStatus(k, s, msg){ STATUS[k].s = s; STATUS[k].msg = msg || ''; if(s === 'ok') STATUS[k].t = new Date(); scheduleRender(); }
+function renderAll(){
+  const now = new Date(), slot = slotOfHour(now.getHours());
+  document.getElementById('rep-slot').textContent = SLOT_T[slot][0] + ' – ' + SLOT_T[slot][1];
+  try { arrivalCache = nextArrival(now); } catch(e){ console.error('arrivo', e); }
+  try { renderAlert(now); } catch(e){ console.error('avviso', e); }
+  try { renderRep(document.getElementById('rep-aut'), 'aut', now); } catch(e){ console.error('rep autisti', e); }
+  try { renderRep(document.getElementById('rep-inf'), 'inf', now); } catch(e){ console.error('rep infermieri', e); }
+  try { renderBlocks(now); } catch(e){ console.error('turni', e); }
+  try { renderRubrica(); } catch(e){ console.error('rubrica', e); }
+  renderStatus();
+  lastRenderKey = renderKey(now);
+  if(!bootDone && (AUT.loadedAt || infSettings !== null)) { bootDone = true; document.getElementById('boot').classList.add('gone'); }
+}
+function renderKey(now){ return ymd(now) + '|' + now.getHours() + '|' + now.getMinutes(); }
+function scheduleRender(){ clearTimeout(renderTimer); renderTimer = setTimeout(renderAll, 150); }
+function tickClock(){
+  const now = new Date();
+  setDigital(now);
+  if(VIEW.clockStyle === 'analog') setAnalog(now);
+  document.getElementById('date').textContent = now.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+  if(renderKey(now) !== lastRenderKey) { applyTheme(now); renderAll(); }
+  else { const wasOn = !!currentArrival; renderAlert(now); if(wasOn !== !!currentArrival) renderAll(); }   // conto alla rovescia al secondo
+  if(now.getHours() === CFG.RELOAD_HOUR && now.getMinutes() === 0 && now.getSeconds() < 2 && performance.now() > 120000) location.reload();
+}
+// Battito allineato all'inizio esatto di ogni secondo
+function startClock(){
+  buildClock(); tickClock();
+  const loop = () => { tickClock(); setTimeout(loop, 1000 - (Date.now() % 1000) + 5); };
+  setTimeout(loop, 1000 - (Date.now() % 1000) + 5);
+}
+// ═══ Copia locale (se manca la rete al riavvio lo schermo mostra comunque l'ultimo dato) ═══
+function trimDays(obj, from, to){ const o = {}; Object.keys(obj || {}).forEach(k => { if(k >= from && k <= to) o[k] = obj[k]; }); return o; }
+function saveCache(){
+  try {
+    const t = ymd(new Date()), from = addDays(t,-3), to = addDays(t,45);
+    localStorage.setItem('monitor118_cache', JSON.stringify({
+      savedAt: Date.now(),
+      aut: { days: trimDays(AUT.days, from, to), repBase: trimDays(AUT.repBase, from, to), names: AUT.names },
+      infX: { days: trimDays(infExcel.days, from, to), tit: trimDays(infExcel.tit, from, to), names: infExcel.names }
+    }));
+  } catch(e) {}
+}
+function loadCache(){
+  try {
+    const c = JSON.parse(localStorage.getItem('monitor118_cache') || 'null'); if(!c) return;
+    if(c.aut && c.aut.names && c.aut.names.length){ AUT = Object.assign({}, c.aut, { loadedAt:null }); buildAutRep(); }
+    if(c.infX && c.infX.names && c.infX.names.length){ infExcel = Object.assign({}, c.infX, { loadedAt:null }); }
+  } catch(e) {}
+}
+
+// ═══ Caricamento Excel ═════════════════════════════════════════════════════
+async function loadAutXlsx(){
+  try {
+    const raw = await fetchSheetRaw(CFG.AUT_XLSX);
+    const p = parseAutistiRaw(raw);
+    if(!p.names.length) throw new Error('nessun autista trovato nel file');
+    AUT = Object.assign(p, { loadedAt: new Date() });
+    buildAutRep(); saveCache(); setStatus('autXlsx','ok');
+  } catch(e){ console.error('Excel autisti:', e); setStatus('autXlsx','err', e.message); }
+}
+async function loadInfXlsx(){
+  if(infMode() !== 'excel') return;
+  try {
+    const raw = await fetchSheetRaw(CFG.INF_XLSX);
+    const p = parseInfermieriRaw(raw);
+    infExcel = Object.assign(p, { loadedAt: new Date() });
+    buildInfRep(); saveCache(); setStatus('infData','ok');
+  } catch(e){ console.error('Excel infermieri:', e); setStatus('infData','err', e.message); }
+}
+
+// ═══ Firebase AUTISTI ══════════════════════════════════════════════════════
+function startAutFirebase(){
+  try {
+    const app = firebase.initializeApp(FB_AUT, 'autisti');
+    dbAut = app.firestore();
+  } catch(e){ setStatus('autFb','err', e.message); return; }
+  const fail = e => { console.error('Firebase autisti:', e); setStatus('autFb','err', e.code || e.message); };
+  dbAut.collection('reperibilita_overrides').onSnapshot(snap => {
+    const m = {};
+    snap.forEach(doc => {
+      const d = doc.data(); if(!d.date || d.slotIndex === undefined || d.slotIndex === null) return;
+      const p = String(d.date).split('-'); if(p.length !== 3) return;
+      m[ymd(new Date(+p[0], +p[1]-1, +p[2])) + '_' + (+d.slotIndex)] = normAut(d.newDriver || '');
+    });
+    autRepOverrides = m; buildAutRep(); setStatus('autFb','ok');
+  }, fail);
+  dbAut.collection('admin_config').doc('reperibilita_manuale').onSnapshot(doc => {
+    const d = doc.exists ? (doc.data() || {}) : {};
+    autRepManual = { titolari: (d.titolari && typeof d.titolari === 'object') ? d.titolari : {}, fasce: (d.fasce && typeof d.fasce === 'object') ? d.fasce : {} };
+    buildAutRep(); scheduleRender();
+  }, fail);
+  dbAut.collection('admin_config').doc('bibbia').onSnapshot(doc => {
+    autBibbia = Object.assign({ autoApplyCambioTurno:false }, doc.exists ? doc.data() : {});
+    scheduleRender();
+  }, fail);
+  dbAut.collection('turno_overrides').onSnapshot(snap => {
+    const m = {};
+    snap.forEach(doc => {
+      const d = doc.data(); if(!d.date || !d.driverA || !d.driverB) return;
+      const p = String(d.date).split('-'); if(p.length !== 3) return;
+      const iso = ymd(new Date(+p[0], +p[1]-1, +p[2]));
+      (m[iso] = m[iso] || []).push({ a: normAut(d.driverA), b: normAut(d.driverB) });
+    });
+    autSwaps = m; scheduleRender();
+  }, fail);
+  // Coperture brevi: un documento per copertura (vedi normCopertura per il formato)
+  startRubricaListener();
+  dbAut.collection('reperibilita_coperture').onSnapshot(snap => {
+    const list = [];
+    snap.forEach(doc => { const c = normCopertura(doc.data(), doc.id, normAut); if(c) list.push(c); });
+    autCoperture = list; scheduleRender();
+  }, e => console.warn('Coperture autisti non lette:', e));
+}
+
+// ═══ Firebase INFERMIERI ═══════════════════════════════════════════════════
+async function detectInfNs(){
+  const q = new URLSearchParams(location.search).get('ns');
+  if(q !== null) return q === 'prod' ? '' : q;
+  try {
+    const txt = await (await fetch(CFG.INF_APP + '?v=' + Date.now(), { cache:'no-store' })).text();
+    const m = txt.match(/const\s+DATA_NS\s*=\s*['"]([^'"]*)['"]/);
+    if(m) { try { localStorage.setItem('monitor118_ns', m[1]); } catch(e) {} return m[1]; }
+  } catch(e) { console.warn('Spazio dati infermieri non rilevato:', e); }
+  try { const s = localStorage.getItem('monitor118_ns'); if(s !== null) return s; } catch(e) {}
+  return CFG.INF_NS_FALLBACK;
+}
+async function startInfFirebase(){
+  INF_NS = await detectInfNs();
+  try {
+    const app = firebase.initializeApp(FB_INF, 'infermieri');
+    dbInf = app.firestore(); authInf = app.auth();
+  } catch(e){ setStatus('infCfg','err', e.message); return; }
+  try { if(!authInf.currentUser) await authInf.signInAnonymously(); } catch(e){ console.warn('Accesso anonimo infermieri non riuscito:', e); }
+  const cfg = name => dbInf.collection('infermieri26_config').doc(INF_NS + name);
+  cfg('settings').onSnapshot(doc => {
+    const prevMode = infSettings ? infMode() : null;
+    infSettings = doc.exists ? (doc.data() || {}) : {};
+    setStatus('infCfg','ok');
+    if(infMode() === 'excel'){
+      stopMonthListeners();
+      if(prevMode !== 'excel' || !infExcel.loadedAt) loadInfXlsx();
+    } else watchInfMonths();
+    buildInfRep(); scheduleRender();
+  }, e => { console.error('Impostazioni infermieri:', e); setStatus('infCfg','err', e.code || e.message); });
+  // Il documento delle reperibilità è condiviso (senza prefisso): ci scrive anche il portale Richieste.
+  dbInf.collection('infermieri26_config').doc('reperibilita').onSnapshot(doc => {
+    const d = doc.exists ? (doc.data() || {}) : {};
+    infRepDoc = { turni: (d.turni && typeof d.turni === 'object') ? d.turni : {}, cessioni: (d.cessioni && typeof d.cessioni === 'object') ? d.cessioni : {} };
+    const cp = (d.coperture && typeof d.coperture === 'object') ? d.coperture : {};
+    infCoperture = Object.keys(cp).map(k => normCopertura(cp[k], k, infToOrig)).filter(Boolean);
+    buildInfRep(); setStatus('infRep','ok');
+  }, e => { console.error('Reperibilità infermieri:', e); setStatus('infRep','err', e.code || e.message); });
+}
+function stopMonthListeners(){ infMonthUnsubs.forEach(u => u()); infMonthUnsubs = []; infMonthKeysWatched = ''; }
+// Modalità "solo app": un documento per mese (turni_AAAA-MM). Si ascoltano mese scorso, attuale e prossimo.
+function watchInfMonths(){
+  const t = new Date(), list = [-1,0,1].map(o => new Date(t.getFullYear(), t.getMonth() + o, 1));
+  const keys = list.map(d => d.getFullYear() + '-' + d.getMonth()).join(',');
+  if(keys === infMonthKeysWatched) return;
+  stopMonthListeners(); infMonthKeysWatched = keys;
+  const perDoc = {};
+  const merge = () => {
+    const out = {};
+    Object.keys(perDoc).forEach(id => { const y = perDoc[id].year; out[y] = Object.assign(out[y] || {}, perDoc[id].cells); });
+    infMonthCells = out; scheduleRender();
+  };
+  list.forEach(d => {
+    const y = d.getFullYear(), id = `turni_${y}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    infMonthUnsubs.push(dbInf.collection('infermieri26_config').doc(INF_NS + id).onSnapshot(doc => {
+      if(!doc.exists && doc.metadata.fromCache) return;
+      const src = doc.exists ? (doc.data().cells || {}) : {}, cells = {};
+      Object.keys(src).forEach(k => { if(!k.includes('@')) cells[k] = src[k]; });
+      perDoc[id] = { year: y, cells }; merge(); setStatus('infData','ok');
+    }, e => { console.error('Turni infermieri ' + id, e); setStatus('infData','err', e.code || e.message); }));
+  });
+}
+
+// ═══ Schermo sempre acceso, schermo intero, cursore ═══════════════════════
+async function keepAwake(){
+  try { if('wakeLock' in navigator && document.visibilityState === 'visible' && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch(e) {}
+}
+function toggleFullscreen(){
+  if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  else document.documentElement.requestFullscreen().catch(()=>{});
+}
+function reloadAll(){ loadAutXlsx(); if(infMode() === 'excel') loadInfXlsx(); }
+function poke(){
+  document.body.classList.remove('hide-cursor'); document.body.classList.add('show-tools');
+  clearTimeout(toolsTimer); toolsTimer = setTimeout(() => { document.body.classList.add('hide-cursor'); document.body.classList.remove('show-tools'); }, 3500);
+  keepAwake();
+}
+
+// ═══ Avvio ═════════════════════════════════════════════════════════════════
+function boot(){
+  loadView();
+  rubLoadLocal();
+  loadCache();
+  applyView();
+  startClock();
+  loadAutXlsx();
+  startAutFirebase();
+  startInfFirebase();
+  setInterval(() => { reloadAll(); if(dbInf && infMode() === 'firebase') watchInfMonths(); }, CFG.EXCEL_REFRESH_MIN * 60000);
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') { keepAwake(); renderAll(); } });
+  ['mousemove','pointerdown','keydown','touchstart'].forEach(ev => document.addEventListener(ev, poke, { passive:true }));
+  document.addEventListener('dblclick', e => { if(!e.target.closest('.pn')) toggleFullscreen(); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closePanel(); if(rubEdit) closeRubEditor(); } });
+  keepAwake(); poke();
+  setTimeout(() => { if(!bootDone){ bootDone = true; document.getElementById('boot').classList.add('gone'); } }, 12000);
+}
+if(typeof window !== 'undefined' && typeof document !== 'undefined' && !window.__MONITOR_TEST__) boot();
+</script>
+</body>
+</html>
