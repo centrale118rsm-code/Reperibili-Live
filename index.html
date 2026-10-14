@@ -257,16 +257,22 @@ body.sfondo .rep-x{font-size:min(1.8cqw,1.3cqh)}
 .tt-o{font-size:min(1.45cqw,1.02cqh);color:var(--tx3);font-variant-numeric:tabular-nums;white-space:nowrap}
 .tt .grp{border-top:0;padding-top:0;gap:.35cqh}
 body.sfondo .tt .p{font-size:min(2.15cqw,1.55cqh)}
-/* tabella codici: tre colonne ordinate */
-body.sfondo .rub-col{display:flex!important;flex:1 1 auto;min-height:0}
-body.sfondo #rubrica{background:transparent;box-shadow:none;border:1px solid var(--hair);border-radius:min(1.4cqw,1cqh);padding:1.2cqh 1.8cqw;font-size:min(2.55cqw,1.8cqh);display:block}
-.rbs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:2.4cqw;height:100%}
-.rbs-col{display:grid;grid-template-rows:repeat(var(--rows,13),minmax(0,1fr));min-width:0;min-height:0}
+/* tabella codici: blocco a sé in basso a destra, carattere fisso (almeno 15 px), si allarga verso sinistra se serve */
+body.sfondo .rub-col{display:none!important}
+#rubsf{display:none}
+body.sfondo.rub:not(.area-quarto) #rubsf{display:block;position:fixed;right:var(--rub-right, 2vw);bottom:calc(var(--tb, 48px) + 1.4vh);
+  width:max-content;max-width:96vw;border:1px solid var(--hair);border-radius:10px;padding:10px 16px 12px;background:#000;
+  font-size:max(15px, 1.5vh);z-index:2}
+.rbs{display:grid;grid-template-columns:repeat(3,auto);justify-content:space-between;column-gap:max(26px,1.8vw)}
+.rbs-col{display:flex;flex-direction:column;gap:max(3px,.25vh);min-width:0}
 .rbs-col.aut{--c:var(--aut)} .rbs-col.inf{--c:var(--inf)}
-.rbs .rb-h{height:auto;align-self:center;font-size:.82em}
-.rbs .rb-r{height:auto;min-height:0;align-self:stretch;align-items:center;border-radius:.3em;line-height:1.15}
-.rbs .rb-c{line-height:1.3}
-.rbs .rb-r:nth-child(even){background:transparent}
+.rbs .rb-h{height:auto;font-size:.8em;margin-bottom:max(4px,.4vh);line-height:1.2}
+.rbs .rb-h.blank::before{display:none}
+.rbs .rb-r{display:grid;grid-template-columns:2.7em max-content;height:auto;padding:0;gap:.6em;align-items:center;line-height:1.3;background:transparent!important}
+.rbs .rb-c{line-height:1.35}
+.rbs .rb-n{overflow:visible;font-weight:500}
+/* il pannello sopra finisce dove iniziano lista codici e riquadro PC (misurati dallo script della pagina) */
+body.sfondo:not(.area-quarto) main{height:calc(var(--area-h) - var(--reserve, var(--below,0px)))}
 body.sfondo #alert{position:fixed;top:2cqh;right:2vw;width:calc(var(--area-w) - 4vw);z-index:6;padding:1.6vh 1.4vw;gap:1.2vw}
 body.sfondo .al-t{font-size:min(1.9vw,3.4vh)} body.sfondo .al-s{font-size:min(.95vw,1.7vh)} body.sfondo .al-ico{width:min(3.4vw,6vh);height:min(3.4vw,6vh)}
 /* quarto in alto a destra: ora e reperibili a sinistra, turni a destra */
@@ -350,6 +356,7 @@ body.sfondo.area-quarto .tt .p{font-size:min(1.4cqw,2.5cqh)}
 <div id="rubed" onclick="if(event.target===this)closeRubEditor()"><div class="pn" id="rubed-box"></div></div>
 <div id="status"></div>
 <div id="pcinfo"></div>
+<div id="rubsf"></div>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // MONITOR REPERIBILI 118 — pagina da lasciare sempre aperta su uno schermo.
@@ -988,13 +995,16 @@ function renderPcInfo(){
   el.innerHTML = `<div class="t">${esc(q.get('titolo') || 'I.S.S. - Servizio Informatico')}</div>` + rows.map(r => `<span>${esc(r[0])}</span><span>${esc(r[1])}</span>`).join('');
   el.classList.add('on'); document.body.classList.add('has-info');
 }
-// Lista codici sullo sfondo: carattere proporzionato all'altezza vera delle righe (niente testi sovrapposti)
+// Sfondo: lista codici in basso, a sinistra del riquadro PC; il pannello sopra finisce subito sopra i due
 function fitRubrica(){
-  const box = document.getElementById('rubrica'), grid = box && box.querySelector('.rbs');
-  if(!grid || !grid.clientHeight) return;
-  const rows = parseInt(grid.style.getPropertyValue('--rows')) || 13;
-  const col = grid.querySelector('.rbs-col'), rowH = grid.clientHeight / rows, colW = col ? col.clientWidth : 200;
-  box.style.fontSize = Math.max(9, Math.min(rowH * .56, colW * .085)).toFixed(1) + 'px';
+  if(!SFONDO) return;
+  const root = document.documentElement.style, info = document.getElementById('pcinfo'), box = document.getElementById('rubsf');
+  const shown = el => el && getComputedStyle(el).display !== 'none' && el.offsetHeight > 0;
+  root.setProperty('--rub-right', shown(info) ? (innerWidth - info.getBoundingClientRect().left + Math.round(innerWidth * .015)) + 'px' : '2vw');
+  let top = innerHeight;
+  [info, box].forEach(el => { if(shown(el)) top = Math.min(top, el.getBoundingClientRect().top); });
+  if(top < innerHeight) root.setProperty('--reserve', Math.round(innerHeight - top + innerHeight * .015) + 'px');
+  else root.removeProperty('--reserve');
 }
 // Nessun testo fuori dai bordi: i nomi lunghi si rimpiccioliscono finché non entrano
 function fitTexts(root){
@@ -1124,9 +1134,9 @@ function renderRubrica(){
     const sorted = l => l.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
     const A = sorted(RUBRICA.autisti), I = sorted(RUBRICA.infermieri), half = Math.ceil(I.length / 2);
     const row = e => `<div class="rb-r"><span class="rb-c">${esc(e.codice)}</span><span class="rb-n">${esc(e.nome)}</span></div>`;
-    const col = (cls, title, list) => `<div class="rbs-col ${cls}"><div class="rb-h">${title}</div>${list.map(row).join('')}</div>`;
-    const rows = Math.max(A.length, half, I.length - half, 1) + 1;
-    el.innerHTML = `<div class="rbs" style="--rows:${rows}">${col('aut', 'Autisti', A)}${col('inf', 'Infermieri', I.slice(0, half))}${col('inf', '&nbsp;', I.slice(half))}</div>`;
+    const col = (cls, title, list) => `<div class="rbs-col ${cls}"><div class="rb-h${title ? '' : ' blank'}">${title || '&nbsp;'}</div>${list.map(row).join('')}</div>`;
+    const box = document.getElementById('rubsf');
+    if(box) box.innerHTML = `<div class="rbs">${col('aut', 'Autisti', A)}${col('inf', 'Infermieri', I.slice(0, half))}${col('inf', '', I.slice(half))}</div>`;
     return;
   }
   const n = RUBRICA.autisti.length + RUBRICA.infermieri.length + 4;
