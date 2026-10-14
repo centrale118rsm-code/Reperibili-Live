@@ -182,12 +182,6 @@ body.rub .p{font-size:min(1.15vw,2.2vh)} body.rub .blk-t{font-size:min(1.4vw,2.5
 .re-msg{color:var(--err);font-size:13px;font-weight:600;margin-top:10px;min-height:1em}
 @media (max-width:640px){ .re-cols{grid-template-columns:1fr} }
 
-.rep-dom{display:flex;align-items:center;flex-wrap:wrap;gap:.5em 1.4em;margin-top:1.4vh;font-size:min(1.25vw,2.2vh);font-weight:600;color:var(--tx2)}
-.rd-l{text-transform:uppercase;letter-spacing:.12em;font-size:.8em;color:var(--red)}
-.rd-n{display:flex;align-items:center;gap:.45em;color:var(--tx);font-weight:700;text-transform:uppercase}
-.rd-n::before{content:"";width:.5em;height:.5em;border-radius:2px;background:var(--c)}
-.rd-n.aut{--c:var(--aut)} .rd-n.inf{--c:var(--inf)}
-body.sfondo .rep-dom{display:none}
 /* ── Impostazioni ── */
 #gear{position:fixed;right:1.2vw;bottom:1.4vh;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);
   display:grid;place-items:center;cursor:pointer;color:var(--tx2);opacity:0;pointer-events:none;transition:opacity .35s;z-index:20}
@@ -259,9 +253,7 @@ body.sfondo .rep-x{font-size:min(1.8cqw,1.3cqh)}
 .tt-n{display:flex;align-items:center;gap:.4em;font-size:min(2.3cqw,1.65cqh);font-weight:600;color:var(--sc);letter-spacing:0;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:none}
 .tt-n svg{width:1.05em;height:1.05em;flex:0 0 auto}
 .tt tr.arriving .tt-n{color:var(--red)}
-.tt tr.repdom{--sc:var(--red)}
-.tt tr.repdom td{border-top:1px solid var(--hair)}
-.tt-ced{font-size:min(1.5cqw,1.1cqh);color:var(--tx3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p em.rep-tag{color:var(--red);background:transparent;padding:0;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
 .tt-o{font-size:min(1.45cqw,1.02cqh);color:var(--tx3);font-variant-numeric:tabular-nums;white-space:nowrap}
 .tt .grp{border-top:0;padding-top:0;gap:.35cqh}
 body.sfondo .tt .p{font-size:min(2.15cqw,1.55cqh)}
@@ -272,9 +264,9 @@ body.sfondo #rubrica{background:transparent;box-shadow:none;border:1px solid var
 .rbs-col{display:grid;grid-template-rows:repeat(var(--rows,13),minmax(0,1fr));min-width:0;min-height:0}
 .rbs-col.aut{--c:var(--aut)} .rbs-col.inf{--c:var(--inf)}
 .rbs .rb-h{height:auto;align-self:center;font-size:.82em}
-.rbs .rb-r{height:auto;min-height:0;align-self:stretch;border-radius:.3em}
+.rbs .rb-r{height:auto;min-height:0;align-self:stretch;align-items:center;border-radius:.3em;line-height:1.15}
+.rbs .rb-c{line-height:1.3}
 .rbs .rb-r:nth-child(even){background:transparent}
-.rbs .rb-r + .rb-r{border-top:1px solid var(--hair2)}
 body.sfondo #alert{position:fixed;top:2cqh;right:2vw;width:calc(var(--area-w) - 4vw);z-index:6;padding:1.6vh 1.4vw;gap:1.2vw}
 body.sfondo .al-t{font-size:min(1.9vw,3.4vh)} body.sfondo .al-s{font-size:min(.95vw,1.7vh)} body.sfondo .al-ico{width:min(3.4vw,6vh);height:min(3.4vw,6vh)}
 /* quarto in alto a destra: ora e reperibili a sinistra, turni a destra */
@@ -768,7 +760,7 @@ function autWorkers(iso, code){
     let src = n;
     for(const s of swaps){ if(s.a === n){ src = s.b; break; } if(s.b === n){ src = s.a; break; } }
     const info = autInterpret(day[src], iso);
-    info.work.forEach(w => { if(w.code === code) res.push({ name:n, diurno:!!w.diurno, hours:w.hours || '', rep: info.rep && code !== 'N' }); });
+    info.work.forEach(w => { if(w.code === code) res.push({ name:n, key:n, diurno:!!w.diurno, hours:w.hours || '', rep: info.rep && code !== 'N' }); });
   });
   return res;
 }
@@ -780,7 +772,7 @@ function infWorkers(iso, code, today){
   const res = [];
   names.forEach(n => {
     const info = infInterpret(infCell(n, iso), infCell(n, addDays(iso,-1)), iso, cc);
-    info.work.forEach(w => { if(w.code === code) res.push({ name: infDisplay(n), diurno:!!w.diurno, hours:w.hours || '', custom:w.custom || '' }); });
+    info.work.forEach(w => { if(w.code === code) res.push({ name: infDisplay(n), key:n, diurno:!!w.diurno, hours:w.hours || '', custom:w.custom || '' }); });
   });
   return res;
 }
@@ -996,8 +988,17 @@ function renderPcInfo(){
   el.innerHTML = `<div class="t">${esc(q.get('titolo') || 'I.S.S. - Servizio Informatico')}</div>` + rows.map(r => `<span>${esc(r[0])}</span><span>${esc(r[1])}</span>`).join('');
   el.classList.add('on'); document.body.classList.add('has-info');
 }
+// Lista codici sullo sfondo: carattere proporzionato all'altezza vera delle righe (niente testi sovrapposti)
+function fitRubrica(){
+  const box = document.getElementById('rubrica'), grid = box && box.querySelector('.rbs');
+  if(!grid || !grid.clientHeight) return;
+  const rows = parseInt(grid.style.getPropertyValue('--rows')) || 13;
+  const col = grid.querySelector('.rbs-col'), rowH = grid.clientHeight / rows, colW = col ? col.clientWidth : 200;
+  box.style.fontSize = Math.max(9, Math.min(rowH * .56, colW * .085)).toFixed(1) + 'px';
+}
 // Nessun testo fuori dai bordi: i nomi lunghi si rimpiccioliscono finché non entrano
 function fitTexts(root){
+  if(!root) { try { fitRubrica(); } catch(e) {} }
   (root || document).querySelectorAll('.rep-n, .p span, .blk-t, .tt-n, .rb-n').forEach(el => {
     el.style.fontSize = '';
     if(!el.clientWidth || el.scrollWidth <= el.clientWidth + 1) return;
@@ -1026,34 +1027,24 @@ function renderRep(el, kind, now){
   el.innerHTML = `<div class="rep-l">${kind === 'aut' ? 'Autista' : 'Infermiere'}</div>
     <div><div class="rep-n${who ? '' : ' none'}">${who ? esc(disp(who)) : (loaded ? 'Nessuno' : '…')}</div><div class="rep-x">${extra.join('')}</div></div>`;
 }
-function groupHtml(kind, list){
+function groupHtml(kind, list, repName){
   let body;
   if(list === null) body = `<div class="p empty"><span>non disponibile</span></div>`;
   else if(!list.length) body = `<div class="p empty"><span>nessuno</span></div>`;
   else body = list.sort((a,b) => (a.diurno - b.diurno) || a.name.localeCompare(b.name))
-    .map(p => `<div class="p"><span>${esc(p.name)}</span>${p.diurno ? `<em>${esc(p.hours)}</em>` : p.custom ? `<em>${esc(p.custom)}</em>` : ''}</div>`).join('');
+    .map(p => `<div class="p"><span>${esc(p.name)}</span>${repName && p.key === repName ? '<em class="rep-tag">reperibile</em>' : ''}${p.diurno ? `<em>${esc(p.hours)}</em>` : p.custom ? `<em>${esc(p.custom)}</em>` : ''}</div>`).join('');
   return `<div class="grp ${kind}">${body}</div>`;
 }
-const REP_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>';
 const TURNO_ICON = {
   M: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>',
   P: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6.5 16a5.5 5.5 0 0 1 11 0Z" fill="currentColor"/><path d="M2.5 19.5h19M12 5.5v2.2M4.6 9.6l1.6 1.4M19.4 9.6l-1.6 1.4"/></svg>',
   N: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1Z"/></svg>'
 };
-// Chi sarà reperibile domani (turno dalle 13:00 di domani alle 13:00 del giorno dopo), con eventuali fasce cedute
-function repDomani(kind, now){
-  const R = kind === 'aut' ? autRep : infRep, disp = kind === 'aut' ? (n => n) : infDisplay;
-  const d = addDays(ymd(now), 1), n = addDays(d, 1), t = R.tit[d] || '';
-  const ced = [[d,2],[d,3],[n,0],[n,1]].map(([x, sl]) => ({ sl, w: (R.days[x] || [])[sl] || '' })).filter(c => c.w && t && c.w !== t);
-  return { name: t ? disp(t) : '', ced: ced.map(c => SLOT_T[c.sl][0].slice(0,2) + '–' + SLOT_T[c.sl][1].slice(0,2) + ' ' + disp(c.w)) };
-}
-function repDomaniCell(kind, now){
-  const r = repDomani(kind, now);
-  if(!r.name) return `<div class="grp ${kind}"><div class="p empty"><span>non indicato</span></div></div>`;
-  return `<div class="grp ${kind}"><div class="p"><span>${esc(r.name)}</span></div>${r.ced.map(c => `<div class="tt-ced">${esc(c)}</div>`).join('')}</div>`;
-}
+// Prossimi reperibili: titolari del turno che parte alle 13:00 (oggi se è mattina, altrimenti domani)
+function nextRepStart(now){ return now.getHours() < 13 ? ymd(now) : addDays(ymd(now), 1); }
+function nextRepName(kind, now){ const R = kind === 'aut' ? autRep : infRep; return R.tit[nextRepStart(now)] || ''; }
 function renderTurniTable(now){
-  const today = ymd(now);
+  const today = ymd(now), repDay = nextRepStart(now), repA = nextRepName('aut', now), repI = nextRepName('inf', now);
   let b = currentBlock(now);
   const rows = [];
   for(let i = 0; i < CFG.BLOCKS; i++){
@@ -1063,19 +1054,16 @@ function renderTurniTable(now){
     const tag = i === 0 ? ' · <b>in corso</b>' : arriving ? ' · <b>in arrivo</b>' : '';
     rows.push(`<tr class="${b.t}${i === 0 ? ' cur' : ''}${arriving ? ' arriving' : ''}">
       <td><div class="tt-d">${esc(dl)}${tag}</div><div class="tt-n">${TURNO_ICON[b.t]}<span>${info.name}</span></div><div class="tt-o">${info.time}</div></td>
-      <td>${groupHtml('aut', autWorkers(b.iso, b.t))}</td>
-      <td>${groupHtml('inf', infWorkers(b.iso, b.t, today))}</td></tr>`);
+      <td>${groupHtml('aut', autWorkers(b.iso, b.t), b.iso === repDay ? repA : '')}</td>
+      <td>${groupHtml('inf', infWorkers(b.iso, b.t, today), b.iso === repDay ? repI : '')}</td></tr>`);
     b = nextBlock(b);
   }
-  const dom = addDays(ymd(now), 1);
-  rows.push(`<tr class="repdom"><td><div class="tt-d">${esc(dayLabel(dom, ymd(now)))} · dalle 13:00</div><div class="tt-n">${REP_ICON}<span>Reperibili</span></div><div class="tt-o">fino alle 13:00 del giorno dopo</div></td>
-    <td>${repDomaniCell('aut', now)}</td><td>${repDomaniCell('inf', now)}</td></tr>`);
   document.getElementById('blocks').innerHTML = `<table class="tt"><colgroup><col style="width:30%"><col style="width:32%"><col style="width:38%"></colgroup>
     <thead><tr><th>Turno</th><th>Autisti</th><th>Infermieri</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
 }
 function renderBlocks(now){
   if(SFONDO) return renderTurniTable(now);
-  const today = ymd(now);
+  const today = ymd(now), repDay = nextRepStart(now), repA = nextRepName('aut', now), repI = nextRepName('inf', now);
   let b = currentBlock(now);
   const out = [];
   for(let i = 0; i < CFG.BLOCKS; i++){
@@ -1088,18 +1076,15 @@ function renderBlocks(now){
         <div class="blk-t">${info.name}</div>
         <div class="blk-time">${info.time}</div>
       </div>
-      ${groupHtml('aut', autWorkers(b.iso, b.t))}
-      ${groupHtml('inf', infWorkers(b.iso, b.t, today))}
+      ${groupHtml('aut', autWorkers(b.iso, b.t), b.iso === repDay ? repA : '')}
+      ${groupHtml('inf', infWorkers(b.iso, b.t, today), b.iso === repDay ? repI : '')}
     </div>`);
     b = nextBlock(b);
   }
   const el = document.getElementById('blocks');
   el.style.setProperty('--nblocks', CFG.BLOCKS);
   el.innerHTML = out.join('');
-  const ra = repDomani('aut', now), ri = repDomani('inf', now);
-  let dl = document.getElementById('rep-dom');
-  if(!dl){ dl = document.createElement('div'); dl.id = 'rep-dom'; dl.className = 'rep-dom'; el.after(dl); }
-  dl.innerHTML = `<span class="rd-l">Reperibili domani dalle 13:00</span><span class="rd-n aut">${esc(ra.name || '—')}</span><span class="rd-n inf">${esc(ri.name || '—')}</span>`;
+
 }
 
 // ═══ Rubrica codici (tabella autisti / infermieri) ════════════════════════
