@@ -214,6 +214,10 @@ body.show-tools #gear{opacity:1;pointer-events:auto}
 .pn-foot button{font:inherit;font-size:14px;font-weight:600;border-radius:10px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--tx2)}
 .pn-foot button.pri{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 
+/* ── Modalità sfondo desktop ── */
+body.sfondo{padding-left:calc(3.2vw + var(--margine, 9vw))}
+body.sfondo *, body.sfondo *::before, body.sfondo *::after{animation:none!important;transition:none!important}
+body.sfondo #gear, body.sfondo #boot, body.sfondo #panel, body.sfondo #rubed{display:none!important}
 #status{position:fixed;left:1.4vw;bottom:1.2vh;font-size:12px;font-weight:600;color:var(--err);display:flex;gap:1em}
 #status:empty{display:none}
 #boot{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:50;transition:opacity .5s}
@@ -361,6 +365,8 @@ const STATUS = {
   infRep:{ s:'wait', t:null, label:'Reperibilità infermieri' }
 };
 let dbAut = null, dbInf = null, authInf = null;
+// Modalità sfondo desktop (?sfondo=1): pagina "fotografata" ogni minuto e messa come sfondo di Windows
+const SFONDO = (() => { try { return /^(1|si|sì|true)$/i.test(new URLSearchParams(location.search).get('sfondo') || ''); } catch(e){ return false; } })();
 let renderTimer = null, lastRenderKey = '', bootDone = false, wakeLock = null, toolsTimer = null;
 
 // ═══ Utilità date ═══════════════════════════════════════════════════════════
@@ -724,6 +730,12 @@ function loadView(){
     if(q.has('tema')) VIEW.theme = { notte:'night', scuro:'night', chiaro:'light', auto:'auto', automatico:'auto' }[q.get('tema').toLowerCase()] || VIEW.theme;
     if(q.has('stile')) VIEW.clockStyle = /^anal/i.test(q.get('stile')) ? 'analog' : 'digital';
     if(q.has('minuti')) VIEW.alertMin = Math.max(5, Math.min(120, parseInt(q.get('minuti')) || 30));
+    if(SFONDO){
+      VIEW.seconds = false;                                  // lo sfondo si aggiorna una volta al minuto
+      if(!q.has('tema')) VIEW.theme = 'night';               // spazi scuri dove mettere le icone
+      const mg = q.has('margine') ? Math.max(0, Math.min(40, parseFloat(q.get('margine')) || 0)) : 9;
+      document.documentElement.style.setProperty('--margine', mg + 'vw');
+    }
   } catch(e) {}
 }
 function saveView(){ try { localStorage.setItem('monitor118_view', JSON.stringify(VIEW)); } catch(e) {} }
@@ -892,7 +904,7 @@ function renderAlert(now){
   const hm = String(a.dt.getHours()).padStart(2,'0') + ':' + String(a.dt.getMinutes()).padStart(2,'0');
   const what = a.total && a.diurni === a.total ? 'i diurnisti' : 'il turno di ' + BLOCK_INFO[a.t].name.toLowerCase();
   const who = [a.aut.length ? `<strong>Autisti:</strong> ${esc(a.aut.join(', '))}` : '', a.inf.length ? `<strong>Infermieri:</strong> ${esc(a.inf.join(', '))}` : ''].filter(Boolean).join(' · ');
-  document.getElementById('al-t').innerHTML = `${a.test ? '<span class="al-test">PROVA</span>' : ''}Cambio turno tra <b>${mm ? mm + ' min ' : ''}${String(ss).padStart(2,'0')} s</b>`;
+  document.getElementById('al-t').innerHTML = `${a.test ? '<span class="al-test">PROVA</span>' : ''}Cambio turno tra <b>${SFONDO ? Math.max(1, Math.ceil(ms / 60000)) + ' min' : (mm ? mm + ' min ' : '') + String(ss).padStart(2,'0') + ' s'}</b>`;
   document.getElementById('al-s').innerHTML = `Alle <strong>${hm}</strong> arriva ${what}${who ? ' — ' + who : ''}.<br>I reperibili hanno ${esc(VIEW.alertMin)} minuti per arrivare: valuta prima di chiamarli.`;
 }
 
@@ -989,13 +1001,6 @@ function renderRubrica(){
   const n = RUBRICA.autisti.length + RUBRICA.infermieri.length + 4;
   el.style.setProperty('--rows', n);
   el.innerHTML = sec('aut', 'Autisti', RUBRICA.autisti) + sec('inf', 'Infermieri', RUBRICA.infermieri);
-}
-function startRubricaListener(){
-  if(!dbAut) return;
-  dbAut.collection('admin_config').doc('monitor_rubrica').onSnapshot(doc => {
-    if(doc.exists && rubSetFrom(doc.data(), 'firebase')) { try { localStorage.setItem('monitor118_rubrica', JSON.stringify(RUBRICA)); } catch(e) {} }
-    scheduleRender();
-  }, e => console.warn('Rubrica non letta da Firebase:', e));
 }
 // ── Editor ──
 function openRubEditor(){
@@ -1145,51 +1150,66 @@ async function loadInfXlsx(){
   } catch(e){ console.error('Excel infermieri:', e); setStatus('infData','err', e.message); }
 }
 
-// ═══ Firebase AUTISTI ══════════════════════════════════════════════════════
+// ═══ Dati Firebase: trasformazioni comuni (usate sia dagli ascoltatori sia dalla modalità sfondo) ═══
+function isoOf(dateStr){ const p = String(dateStr || '').split('-'); return p.length === 3 ? ymd(new Date(+p[0], +p[1]-1, +p[2])) : null; }
+function applyAutOverrides(list){
+  const m = {};
+  list.forEach(d => { if(!d || d.slotIndex === undefined || d.slotIndex === null) return; const iso = isoOf(d.date); if(iso) m[iso + '_' + (+d.slotIndex)] = normAut(d.newDriver || ''); });
+  autRepOverrides = m; buildAutRep();
+}
+function applyAutManual(d){
+  d = d || {};
+  autRepManual = { titolari: (d.titolari && typeof d.titolari === 'object') ? d.titolari : {}, fasce: (d.fasce && typeof d.fasce === 'object') ? d.fasce : {} };
+  buildAutRep();
+}
+function applyAutBibbia(d){ autBibbia = Object.assign({ autoApplyCambioTurno:false }, d || {}); }
+function applyAutSwaps(list){
+  const m = {};
+  list.forEach(d => { if(!d || !d.driverA || !d.driverB) return; const iso = isoOf(d.date); if(iso) (m[iso] = m[iso] || []).push({ a: normAut(d.driverA), b: normAut(d.driverB) }); });
+  autSwaps = m;
+}
+function applyAutCoperture(items){ autCoperture = items.map(x => normCopertura(x.data, x.id, normAut)).filter(Boolean); }
+function applyRubrica(d){ if(d && rubSetFrom(d, 'firebase')) { try { localStorage.setItem('monitor118_rubrica', JSON.stringify(RUBRICA)); } catch(e) {} } }
+function applyInfRepDoc(d){
+  d = d || {};
+  infRepDoc = { turni: (d.turni && typeof d.turni === 'object') ? d.turni : {}, cessioni: (d.cessioni && typeof d.cessioni === 'object') ? d.cessioni : {} };
+  const cp = (d.coperture && typeof d.coperture === 'object') ? d.coperture : {};
+  infCoperture = Object.keys(cp).map(k => normCopertura(cp[k], k, infToOrig)).filter(Boolean);
+  buildInfRep();
+}
+// Modalità "solo app" degli infermieri: un documento per mese (turni_AAAA-MM); si leggono mese scorso, attuale e prossimo.
+let infMonthDocs = {};
+function infMonthList(){ const t = new Date(); return [-1,0,1].map(o => new Date(t.getFullYear(), t.getMonth() + o, 1)).map(d => ({ y: d.getFullYear(), id: `turni_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` })); }
+function applyInfMonth(id, year, data){
+  const src = (data && data.cells) || {}, cells = {};
+  Object.keys(src).forEach(k => { if(!k.includes('@')) cells[k] = src[k]; });
+  infMonthDocs[id] = { year, cells };
+  const out = {};
+  Object.keys(infMonthDocs).forEach(k => { const y = infMonthDocs[k].year; out[y] = Object.assign(out[y] || {}, infMonthDocs[k].cells); });
+  infMonthCells = out;
+}
+
+// ═══ Firebase AUTISTI (in tempo reale) ═════════════════════════════════════
 function startAutFirebase(){
   try {
     const app = firebase.initializeApp(FB_AUT, 'autisti');
     dbAut = app.firestore();
   } catch(e){ setStatus('autFb','err', e.message); return; }
   const fail = e => { console.error('Firebase autisti:', e); setStatus('autFb','err', e.code || e.message); };
-  dbAut.collection('reperibilita_overrides').onSnapshot(snap => {
-    const m = {};
-    snap.forEach(doc => {
-      const d = doc.data(); if(!d.date || d.slotIndex === undefined || d.slotIndex === null) return;
-      const p = String(d.date).split('-'); if(p.length !== 3) return;
-      m[ymd(new Date(+p[0], +p[1]-1, +p[2])) + '_' + (+d.slotIndex)] = normAut(d.newDriver || '');
-    });
-    autRepOverrides = m; buildAutRep(); setStatus('autFb','ok');
-  }, fail);
-  dbAut.collection('admin_config').doc('reperibilita_manuale').onSnapshot(doc => {
-    const d = doc.exists ? (doc.data() || {}) : {};
-    autRepManual = { titolari: (d.titolari && typeof d.titolari === 'object') ? d.titolari : {}, fasce: (d.fasce && typeof d.fasce === 'object') ? d.fasce : {} };
-    buildAutRep(); scheduleRender();
-  }, fail);
-  dbAut.collection('admin_config').doc('bibbia').onSnapshot(doc => {
-    autBibbia = Object.assign({ autoApplyCambioTurno:false }, doc.exists ? doc.data() : {});
-    scheduleRender();
-  }, fail);
-  dbAut.collection('turno_overrides').onSnapshot(snap => {
-    const m = {};
-    snap.forEach(doc => {
-      const d = doc.data(); if(!d.date || !d.driverA || !d.driverB) return;
-      const p = String(d.date).split('-'); if(p.length !== 3) return;
-      const iso = ymd(new Date(+p[0], +p[1]-1, +p[2]));
-      (m[iso] = m[iso] || []).push({ a: normAut(d.driverA), b: normAut(d.driverB) });
-    });
-    autSwaps = m; scheduleRender();
-  }, fail);
+  const docs = snap => { const a = []; snap.forEach(doc => a.push(doc.data())); return a; };
+  dbAut.collection('reperibilita_overrides').onSnapshot(snap => { applyAutOverrides(docs(snap)); setStatus('autFb','ok'); }, fail);
+  dbAut.collection('admin_config').doc('reperibilita_manuale').onSnapshot(doc => { applyAutManual(doc.exists ? doc.data() : {}); scheduleRender(); }, fail);
+  dbAut.collection('admin_config').doc('bibbia').onSnapshot(doc => { applyAutBibbia(doc.exists ? doc.data() : {}); scheduleRender(); }, fail);
+  dbAut.collection('turno_overrides').onSnapshot(snap => { applyAutSwaps(docs(snap)); scheduleRender(); }, fail);
+  dbAut.collection('admin_config').doc('monitor_rubrica').onSnapshot(doc => { if(doc.exists) applyRubrica(doc.data()); scheduleRender(); }, e => console.warn('Rubrica non letta da Firebase:', e));
   // Coperture brevi: un documento per copertura (vedi normCopertura per il formato)
-  startRubricaListener();
   dbAut.collection('reperibilita_coperture').onSnapshot(snap => {
-    const list = [];
-    snap.forEach(doc => { const c = normCopertura(doc.data(), doc.id, normAut); if(c) list.push(c); });
-    autCoperture = list; scheduleRender();
+    const items = []; snap.forEach(doc => items.push({ id: doc.id, data: doc.data() }));
+    applyAutCoperture(items); scheduleRender();
   }, e => console.warn('Coperture autisti non lette:', e));
 }
 
-// ═══ Firebase INFERMIERI ═══════════════════════════════════════════════════
+// ═══ Firebase INFERMIERI (in tempo reale) ══════════════════════════════════
 async function detectInfNs(){
   const q = new URLSearchParams(location.search).get('ns');
   if(q !== null) return q === 'prod' ? '' : q;
@@ -1221,35 +1241,109 @@ async function startInfFirebase(){
   }, e => { console.error('Impostazioni infermieri:', e); setStatus('infCfg','err', e.code || e.message); });
   // Il documento delle reperibilità è condiviso (senza prefisso): ci scrive anche il portale Richieste.
   dbInf.collection('infermieri26_config').doc('reperibilita').onSnapshot(doc => {
-    const d = doc.exists ? (doc.data() || {}) : {};
-    infRepDoc = { turni: (d.turni && typeof d.turni === 'object') ? d.turni : {}, cessioni: (d.cessioni && typeof d.cessioni === 'object') ? d.cessioni : {} };
-    const cp = (d.coperture && typeof d.coperture === 'object') ? d.coperture : {};
-    infCoperture = Object.keys(cp).map(k => normCopertura(cp[k], k, infToOrig)).filter(Boolean);
-    buildInfRep(); setStatus('infRep','ok');
+    applyInfRepDoc(doc.exists ? doc.data() : {}); setStatus('infRep','ok');
   }, e => { console.error('Reperibilità infermieri:', e); setStatus('infRep','err', e.code || e.message); });
 }
 function stopMonthListeners(){ infMonthUnsubs.forEach(u => u()); infMonthUnsubs = []; infMonthKeysWatched = ''; }
-// Modalità "solo app": un documento per mese (turni_AAAA-MM). Si ascoltano mese scorso, attuale e prossimo.
 function watchInfMonths(){
-  const t = new Date(), list = [-1,0,1].map(o => new Date(t.getFullYear(), t.getMonth() + o, 1));
-  const keys = list.map(d => d.getFullYear() + '-' + d.getMonth()).join(',');
+  const list = infMonthList(), keys = list.map(m => m.id).join(',');
   if(keys === infMonthKeysWatched) return;
-  stopMonthListeners(); infMonthKeysWatched = keys;
-  const perDoc = {};
-  const merge = () => {
-    const out = {};
-    Object.keys(perDoc).forEach(id => { const y = perDoc[id].year; out[y] = Object.assign(out[y] || {}, perDoc[id].cells); });
-    infMonthCells = out; scheduleRender();
-  };
-  list.forEach(d => {
-    const y = d.getFullYear(), id = `turni_${y}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  stopMonthListeners(); infMonthKeysWatched = keys; infMonthDocs = {};
+  list.forEach(({ y, id }) => {
     infMonthUnsubs.push(dbInf.collection('infermieri26_config').doc(INF_NS + id).onSnapshot(doc => {
       if(!doc.exists && doc.metadata.fromCache) return;
-      const src = doc.exists ? (doc.data().cells || {}) : {}, cells = {};
-      Object.keys(src).forEach(k => { if(!k.includes('@')) cells[k] = src[k]; });
-      perDoc[id] = { year: y, cells }; merge(); setStatus('infData','ok');
+      applyInfMonth(id, y, doc.exists ? doc.data() : {}); setStatus('infData','ok');
     }, e => { console.error('Turni infermieri ' + id, e); setStatus('infData','err', e.code || e.message); }));
   });
+}
+
+// ═══ Modalità SFONDO DESKTOP: lettura una tantum via REST ══════════════════
+// Per la "foto" fatta da Edge invisibile servono richieste che finiscono: niente connessioni
+// sempre aperte. Stessi documenti e stesse trasformazioni degli ascoltatori qui sopra.
+const REST_TOK = {};
+function fsVal(v){
+  if(!v || typeof v !== 'object') return null;
+  if('stringValue' in v) return v.stringValue;
+  if('integerValue' in v) return Number(v.integerValue);
+  if('doubleValue' in v) return Number(v.doubleValue);
+  if('booleanValue' in v) return v.booleanValue;
+  if('nullValue' in v) return null;
+  if('timestampValue' in v) return v.timestampValue;
+  if('mapValue' in v) return fsFields((v.mapValue && v.mapValue.fields) || {});
+  if('arrayValue' in v) return ((v.arrayValue && v.arrayValue.values) || []).map(fsVal);
+  if('referenceValue' in v) return v.referenceValue;
+  return null;
+}
+function fsFields(f){ const o = {}; Object.keys(f || {}).forEach(k => { o[k] = fsVal(f[k]); }); return o; }
+async function restToken(cfg, force){
+  const key = 'monitor118_tok_' + cfg.projectId; let t = null;
+  try { t = JSON.parse(localStorage.getItem(key) || 'null'); } catch(e) {}
+  if(t && !force && t.exp > Date.now() + 60000) return (REST_TOK[cfg.projectId] = t.id);
+  try {
+    let n = null;
+    if(t && t.refresh){
+      const r = await fetch('https://securetoken.googleapis.com/v1/token?key=' + cfg.apiKey, { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body:'grant_type=refresh_token&refresh_token=' + encodeURIComponent(t.refresh) });
+      if(r.ok){ const x = await r.json(); n = { id: x.id_token, refresh: x.refresh_token, exp: Date.now() + (+x.expires_in || 3600) * 1000 }; }
+    }
+    if(!n){
+      const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + cfg.apiKey, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ returnSecureToken:true }) });
+      if(!r.ok) return null;
+      const x = await r.json(); n = { id: x.idToken, refresh: x.refreshToken, exp: Date.now() + (+x.expiresIn || 3600) * 1000 };
+    }
+    try { localStorage.setItem(key, JSON.stringify(n)); } catch(e) {}
+    return (REST_TOK[cfg.projectId] = n.id);
+  } catch(e){ return null; }
+}
+async function restFetch(cfg, path, extra){
+  const url = `https://firestore.googleapis.com/v1/projects/${cfg.projectId}/databases/(default)/documents/` + path.split('/').map(encodeURIComponent).join('/') + '?key=' + cfg.apiKey + (extra || '');
+  const go = tok => fetch(url, { cache:'no-store', headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
+  const had = REST_TOK[cfg.projectId] || null;
+  let r = await go(had);
+  if(r.status === 401 || r.status === 403){ const tok = await restToken(cfg, !!had); if(tok) r = await go(tok); }
+  return r;
+}
+async function restDoc(cfg, path){
+  const r = await restFetch(cfg, path, '');
+  if(r.status === 404) return null;
+  if(!r.ok) throw new Error('HTTP ' + r.status + ' su ' + path);
+  const j = await r.json(); return fsFields(j.fields || {});
+}
+async function restList(cfg, path){
+  const out = []; let pt = '';
+  for(let i = 0; i < 30; i++){
+    const r = await restFetch(cfg, path, '&pageSize=300' + (pt ? '&pageToken=' + encodeURIComponent(pt) : ''));
+    if(r.status === 404) break;
+    if(!r.ok) throw new Error('HTTP ' + r.status + ' su ' + path);
+    const j = await r.json();
+    (j.documents || []).forEach(d => out.push({ id: String(d.name || '').split('/').pop(), data: fsFields(d.fields || {}) }));
+    if(!j.nextPageToken) break; pt = j.nextPageToken;
+  }
+  return out;
+}
+async function restLoadOnce(){
+  const A = FB_AUT, I = FB_INF, safe = p => p.catch(e => { console.warn(e); return null; });
+  try {
+    const [ov, man, bib, sw, cop, rub] = await Promise.all([restList(A,'reperibilita_overrides'), restDoc(A,'admin_config/reperibilita_manuale'), restDoc(A,'admin_config/bibbia'),
+      restList(A,'turno_overrides'), safe(restList(A,'reperibilita_coperture')), safe(restDoc(A,'admin_config/monitor_rubrica'))]);
+    applyAutOverrides(ov.map(x => x.data)); applyAutManual(man); applyAutBibbia(bib); applyAutSwaps(sw.map(x => x.data));
+    if(cop) applyAutCoperture(cop); if(rub) applyRubrica(rub);
+    setStatus('autFb','ok');
+  } catch(e){ console.error('Autisti (REST):', e); setStatus('autFb','err', e.message); }
+  try {
+    INF_NS = await detectInfNs();
+    infSettings = (await restDoc(I, 'infermieri26_config/' + INF_NS + 'settings')) || {};
+    setStatus('infCfg','ok');
+    try { applyInfRepDoc(await restDoc(I, 'infermieri26_config/reperibilita')); setStatus('infRep','ok'); }
+    catch(e){ console.error('Reperibilità infermieri (REST):', e); setStatus('infRep','err', e.message); }
+    if(infMode() === 'excel') await loadInfXlsx();
+    else {
+      infMonthDocs = {};
+      for(const m of infMonthList()) applyInfMonth(m.id, m.y, await restDoc(I, 'infermieri26_config/' + INF_NS + m.id));
+      setStatus('infData','ok');
+    }
+    buildInfRep();
+  } catch(e){ console.error('Infermieri (REST):', e); if(STATUS.infCfg.s !== 'ok') setStatus('infCfg','err', e.message); else setStatus('infData','err', e.message); }
+  scheduleRender();
 }
 
 // ═══ Schermo sempre acceso, schermo intero, cursore ═══════════════════════
@@ -1269,6 +1363,7 @@ function poke(){
 
 // ═══ Avvio ═════════════════════════════════════════════════════════════════
 function boot(){
+  if(SFONDO){ bootSfondo(); return; }
   loadView();
   rubLoadLocal();
   loadCache();
@@ -1284,6 +1379,16 @@ function boot(){
   document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closePanel(); if(rubEdit) closeRubEditor(); } });
   keepAwake(); poke();
   setTimeout(() => { if(!bootDone){ bootDone = true; document.getElementById('boot').classList.add('gone'); } }, 12000);
+}
+function bootSfondo(){
+  document.body.classList.add('sfondo');
+  bootDone = true; document.getElementById('boot').classList.add('gone');
+  loadView(); rubLoadLocal(); loadCache(); applyView();
+  startClock();
+  loadAutXlsx();
+  restLoadOnce();
+  // aperta in un browser normale continua ad aggiornarsi; per la "foto" basta il primo caricamento
+  setInterval(() => { loadAutXlsx(); restLoadOnce(); }, 60000);
 }
 if(typeof window !== 'undefined' && typeof document !== 'undefined' && !window.__MONITOR_TEST__) boot();
 </script>
