@@ -37,7 +37,6 @@ body.night{
 }
 body.night .dclock, body.night .rep-n{color:#e6e9f0}
 body.night #alert{box-shadow:0 8px 30px rgba(212,42,56,.25)}
-body.night .secbar i.on{background:#aeb6c6}
 html,body{transition:background-color .8s}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--f);overflow:hidden;-webkit-font-smoothing:antialiased}
@@ -74,17 +73,10 @@ body.no-data .dclock{font-size:min(24vw,40vh)}
 .dclock .sec{font-size:.42em;color:var(--red);font-weight:600;margin-left:.12em;display:inline-block;min-width:1.25em}
 .dclock .sec.tick{animation:tick .35s cubic-bezier(.3,1.8,.5,1)}
 @keyframes tick{0%{transform:translateY(-.18em) scale(1.12);opacity:.4}100%{transform:none;opacity:1}}
-body.no-seconds .dclock .sec, body.no-seconds .secbar{display:none}
-.secbar{display:grid;grid-template-columns:repeat(60,1fr);gap:min(.22vw,.4vh);width:min(34vw,62vh)}
-body.no-data .secbar{width:min(70vw,120vh)}
-.secbar i{height:min(.9vh,.5vw);min-height:4px;border-radius:2px;background:var(--line);transition:background .2s}
-.secbar i.on{background:var(--tx)}
-.secbar i.q{height:min(1.6vh,.9vw);min-height:7px}
-.secbar i.cur{background:var(--red)}
 .aclock{width:min(34vw,62vh);aspect-ratio:1;filter:drop-shadow(0 18px 40px var(--clock-shadow));display:none}
 body.no-data .aclock{width:min(60vw,68vh)}
 .aclock svg{width:100%;height:100%;display:block}
-body.analog .aclock{display:block} body.analog .dclock, body.analog .secbar{display:none}
+body.analog .aclock{display:block} body.analog .ring-clock{display:none}
 .hand{transform-box:view-box;transform-origin:100px 100px}
 .hand.sec{transition:transform .32s cubic-bezier(.4,2.1,.55,.45)}
 .hand.min{transition:transform .5s cubic-bezier(.4,1.6,.55,.7)}
@@ -94,6 +86,37 @@ body.analog .adigital{display:block}
 .adigital .s{color:var(--red);font-weight:400}
 .date{font-size:min(1.7vw,3vh);font-weight:500;color:var(--tx2);text-transform:capitalize}
 body.no-date .date{display:none}
+
+/* ── Orologio ad anello (secondi che si consumano come il timer dell'iPhone) ── */
+:root{--ring:#ff9f0a; --ring-track:#ffe9c7; --bar-t:#22b455; --bar-d:#38bdf8; --bar-track:#e9ecf1}
+body.night{--ring:#ff9f0a; --ring-track:rgba(255,159,10,.14); --bar-t:#30d158; --bar-d:#64d2ff; --bar-track:#1a1f29}
+.ring-clock{position:relative;width:min(32vw,56vh);aspect-ratio:1;container-type:inline-size}
+body.no-data .ring-clock{width:min(60vw,78vh)}
+.ring-clock svg{position:absolute;inset:0;width:100%;height:100%}
+.rc-track{fill:none;stroke:var(--ring-track);stroke-width:6}
+.rc-arc{fill:none;stroke:var(--ring);stroke-width:6;stroke-linecap:round;stroke-dasharray:60 60;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear}
+.rc-arc.jump{transition:none}
+body.no-seconds .rc-arc, body.no-seconds .rc-track{display:none}
+.rc-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5cqw}
+.ring-clock .dclock{font-size:27cqw;font-weight:600;letter-spacing:-.045em;line-height:.9;font-variant-numeric:tabular-nums;display:flex;align-items:baseline}
+.ring-clock .date{font-size:5.4cqw;margin:0}
+/* ── Barre fine turno ── */
+.bars{width:min(32vw,56vh);display:flex;flex-direction:column;gap:1.6vh}
+body.no-data .bars{width:min(60vw,78vh)}
+body.no-bars .bars{display:none}
+.bar{display:flex;flex-direction:column;gap:.7vh;min-width:0}
+.bar-l{display:flex;justify-content:space-between;align-items:baseline;gap:.8em;font-size:min(1.05vw,1.9vh);font-weight:600;color:var(--tx2);min-width:0}
+.bar-l b{color:var(--tx);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-l span{white-space:nowrap;font-variant-numeric:tabular-nums}
+.bar-t{height:min(.9vh,.55vw);min-height:5px;border-radius:99px;background:var(--bar-track);overflow:hidden}
+.bar-f{height:100%;border-radius:99px;background:var(--c);transition:width 1s linear}
+.bar.t{--c:var(--bar-t)} .bar.d{--c:var(--bar-d)}
+.bar.off .bar-l b{color:var(--tx3);font-weight:600}
+/* ── Riquadro informazioni PC (come lo sfondo aziendale) ── */
+#pcinfo{display:none}
+body.sfondo #pcinfo.on{display:grid;position:fixed;right:1.3vw;bottom:1.6vh;grid-template-columns:auto auto;column-gap:1.6em;row-gap:.12em;
+  font-family:Tahoma,'Segoe UI',Arial,sans-serif;font-size:min(.78vw,1.45vh);color:#e8e8e8;line-height:1.25;z-index:3}
+#pcinfo .t{grid-column:1/-1;font-weight:700;margin-bottom:.15em}
 
 /* ── Colonna dati ── */
 .data-col{display:flex;flex-direction:column;gap:4.5vh;min-width:0;justify-content:center}
@@ -147,8 +170,8 @@ body.no-reps .blocks{grid-template-columns:repeat(min(var(--nblocks,4),3),minmax
 body.rub .rub-col{display:flex;flex-direction:column}
 body.rub main{grid-template-columns:minmax(0,31fr) minmax(0,47fr) minmax(0,22fr);gap:2.2vw}
 body.rub.no-clock main, body.rub.no-data main{grid-template-columns:minmax(0,74fr) minmax(0,26fr)}
-body.rub .dclock{font-size:min(9vw,18vh)} body.rub .secbar,body.rub .aclock{width:min(27vw,52vh)}
-body.rub.no-data .dclock{font-size:min(18vw,34vh)} body.rub.no-data .secbar{width:min(55vw,100vh)}
+body.rub .ring-clock,body.rub .aclock,body.rub .bars{width:min(26vw,50vh)}
+body.rub.no-data .ring-clock,body.rub.no-data .bars{width:min(50vw,70vh)}
 body.rub .rep{grid-template-columns:min(8vw,14vh) minmax(0,1fr);padding:2vh 1.5vw}
 body.rub .rep-n{font-size:min(4.3vw,8.5vh)}
 body.rub .p{font-size:min(1.15vw,2.2vh)} body.rub .blk-t{font-size:min(1.4vw,2.5vh)} body.rub .blk{padding:1.8vh .8vw 2vh}
@@ -214,10 +237,51 @@ body.show-tools #gear{opacity:1;pointer-events:auto}
 .pn-foot button{font:inherit;font-size:14px;font-weight:600;border-radius:10px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--tx2)}
 .pn-foot button.pri{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 
-/* ── Modalità sfondo desktop ── */
-body.sfondo{padding-left:calc(3.2vw + var(--margine, 9vw))}
+/* ── Modalità sfondo desktop: pannello solo a destra, il resto nero pieno per le icone ── */
+body.sfondo{background:#000!important;padding:0;display:block;--area-w:42vw;--area-h:100vh}
+body.sfondo.area-quarto{--area-w:50vw;--area-h:50vh}
 body.sfondo *, body.sfondo *::before, body.sfondo *::after{animation:none!important;transition:none!important}
-body.sfondo #gear, body.sfondo #boot, body.sfondo #panel, body.sfondo #rubed{display:none!important}
+body.sfondo #gear, body.sfondo #boot, body.sfondo #panel, body.sfondo #rubed, body.sfondo #status{display:none!important}
+body.sfondo main{position:fixed;top:0;right:0;width:var(--area-w);height:calc(var(--area-h) - var(--info-h,0px));container-type:size;container-name:pan;
+  display:flex!important;flex-direction:column;gap:3cqh;padding:3.2cqh 3.4cqw;background:#000}
+body.sfondo.has-info:not(.area-quarto) main{--info-h:11vh}
+body.sfondo .rub-col{display:none!important}
+body.sfondo .clock-col{flex:0 0 auto;flex-direction:row;align-items:center;justify-content:flex-start;gap:5cqw}
+body.sfondo .ring-clock{width:min(40cqw,26cqh);flex:0 0 auto}
+body.sfondo .aclock{width:min(40cqw,26cqh)}
+body.sfondo .bars{flex:1;width:auto;gap:2.4cqh;min-width:0}
+body.sfondo .bar-l{font-size:min(2.5cqw,1.9cqh)}
+body.sfondo .bar-t{height:min(1.1cqh,1.4cqw)}
+body.sfondo .data-col{flex:1;min-height:0;gap:3cqh;justify-content:flex-start}
+body.sfondo .kicker{font-size:min(2.2cqw,1.6cqh)}
+body.sfondo .reps{gap:1.4cqh;margin-top:1.2cqh}
+body.sfondo .rep{grid-template-columns:min(16cqw,12cqh) minmax(0,1fr);gap:2cqw;padding:1.6cqh 2.6cqw;background:transparent;box-shadow:none;border-width:max(2px,.35cqw);border-radius:min(2cqw,1.6cqh)}
+body.sfondo .rep-l{font-size:min(2.3cqw,1.7cqh)}
+body.sfondo .rep-n{font-size:min(7.2cqw,5.2cqh)!important}
+body.sfondo .rep-x{font-size:min(2cqw,1.5cqh)}
+body.sfondo .blocks{display:flex!important;flex-direction:column;gap:1.2cqh;margin-top:1.2cqh}
+body.sfondo .blk{display:grid;grid-template-columns:min(24cqw,17cqh) minmax(0,1fr) minmax(0,1fr);align-items:start;gap:2cqw;padding:1.3cqh 2.2cqw;background:transparent;box-shadow:none;border:1px solid #1d2330;border-radius:min(1.6cqw,1.2cqh)}
+body.sfondo .blk.cur{border-color:var(--sc)}
+body.sfondo .blk-d{font-size:min(1.7cqw,1.3cqh)} body.sfondo .blk-t{font-size:min(2.9cqw,2.2cqh)} body.sfondo .blk-time{font-size:min(1.6cqw,1.2cqh)}
+body.sfondo .grp{border-top:0;padding-top:0;gap:.5cqh}
+body.sfondo .p{font-size:min(2.4cqw,1.8cqh)}
+body.sfondo #alert{position:fixed;top:2cqh;right:2vw;width:calc(var(--area-w) - 4vw);z-index:6;padding:1.6vh 1.4vw;gap:1.2vw}
+body.sfondo .al-t{font-size:min(1.9vw,3.4vh)} body.sfondo .al-s{font-size:min(.95vw,1.7vh)} body.sfondo .al-ico{width:min(3.4vw,6vh);height:min(3.4vw,6vh)}
+/* quarto in alto a destra (pannello largo): orologio e barre a sinistra, reperibili e turni a destra */
+body.sfondo.area-quarto main{display:grid!important;grid-template-columns:minmax(0,38fr) minmax(0,62fr);gap:3cqw;align-content:start}
+body.sfondo.area-quarto .clock-col{flex-direction:column;align-items:stretch;gap:3cqh}
+body.sfondo.area-quarto .ring-clock{width:min(34cqw,52cqh);align-self:center}
+body.sfondo.area-quarto .bars{gap:3cqh}
+body.sfondo.area-quarto .bar-l{font-size:min(2cqw,3cqh)}
+body.sfondo.area-quarto .bar-t{height:min(1.6cqh,1cqw)}
+body.sfondo.area-quarto .kicker{font-size:min(1.6cqw,2.8cqh)}
+body.sfondo.area-quarto .rep{grid-template-columns:min(11cqw,18cqh) minmax(0,1fr);padding:2.4cqh 1.8cqw}
+body.sfondo.area-quarto .rep-l{font-size:min(1.6cqw,2.8cqh)}
+body.sfondo.area-quarto .rep-n{font-size:min(4.6cqw,8.5cqh)!important}
+body.sfondo.area-quarto .rep-x{font-size:min(1.3cqw,2.3cqh)}
+body.sfondo.area-quarto .blk{grid-template-columns:min(13cqw,22cqh) minmax(0,1fr) minmax(0,1fr);padding:1.8cqh 1.6cqw}
+body.sfondo.area-quarto .blk-d{font-size:min(1.15cqw,2cqh)} body.sfondo.area-quarto .blk-t{font-size:min(1.8cqw,3.2cqh)} body.sfondo.area-quarto .blk-time{font-size:min(1.05cqw,1.9cqh)}
+body.sfondo.area-quarto .p{font-size:min(1.5cqw,2.7cqh)}
 #status{position:fixed;left:1.4vw;bottom:1.2vh;font-size:12px;font-weight:600;color:var(--err);display:flex;gap:1em}
 #status:empty{display:none}
 #boot{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:50;transition:opacity .5s}
@@ -229,7 +293,7 @@ body.sfondo #gear, body.sfondo #boot, body.sfondo #panel, body.sfondo #rubed{dis
   html,body{overflow:auto;height:auto}
   body{padding:3vh 5vw}
   main{grid-template-columns:1fr!important;gap:4vh}
-  .dclock{font-size:min(22vw,14vh)} .secbar{width:min(80vw,50vh)} .aclock{width:min(70vw,44vh)}
+  .ring-clock,.bars{width:min(80vw,46vh)} .aclock{width:min(70vw,44vh)}
   .date{font-size:min(4vw,2.4vh)} .kicker{font-size:min(3.2vw,1.8vh)}
   .al-t{font-size:min(5vw,3vh)} .al-s{font-size:min(3.4vw,1.8vh)} .al-ico{width:min(10vw,6vh);height:min(10vw,6vh)}
   .rep{grid-template-columns:1fr;gap:.6vh;padding:2vh 5vw}
@@ -256,11 +320,13 @@ body.sfondo #gear, body.sfondo #boot, body.sfondo #panel, body.sfondo #rubed{dis
 
 <main>
   <section class="clock-col">
-    <div class="dclock" id="dclock"><span id="dh">--</span><span class="sep">:</span><span id="dm">--</span><span class="sec" id="ds">--</span></div>
-    <div class="secbar" id="secbar"></div>
+    <div class="ring-clock" id="ring-clock">
+      <svg viewBox="0 0 200 200" aria-hidden="true"><circle class="rc-track" cx="100" cy="100" r="93"/><circle class="rc-arc" id="rc-arc" cx="100" cy="100" r="93" pathLength="60" transform="rotate(-90 100 100)"/></svg>
+      <div class="rc-in"><div class="dclock" id="dclock"><span id="dh">--</span><span class="sep">:</span><span id="dm">--</span></div><div class="date" id="date"></div></div>
+    </div>
     <div class="aclock"><svg viewBox="0 0 200 200" id="clock-svg" aria-hidden="true"></svg></div>
     <div class="adigital" id="adigital"></div>
-    <div class="date" id="date"></div>
+    <div class="bars" id="bars"></div>
   </section>
 
   <section class="data-col">
@@ -283,6 +349,7 @@ body.sfondo #gear, body.sfondo #boot, body.sfondo #panel, body.sfondo #rubed{dis
 <div id="panel" onclick="if(event.target===this)closePanel()"><div class="pn" id="pn"></div></div>
 <div id="rubed" onclick="if(event.target===this)closeRubEditor()"><div class="pn" id="rubed-box"></div></div>
 <div id="status"></div>
+<div id="pcinfo"></div>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // MONITOR REPERIBILI 118 — pagina da lasciare sempre aperta su uno schermo.
@@ -366,6 +433,9 @@ const STATUS = {
 };
 let dbAut = null, dbInf = null, authInf = null;
 // Modalità sfondo desktop (?sfondo=1): pagina "fotografata" ogni minuto e messa come sfondo di Windows
+// In modalità sfondo lo script passa l'istante in cui l'immagine comparirà (ts): l'orologio mostra quello
+const SFONDO_TS = (() => { try { const q = new URLSearchParams(location.search); const t = +q.get('ts'), o = +(q.get('ofs') || 0); return t > 0 ? t + o : 0; } catch(e){ return 0; } })();
+function NOW(){ return SFONDO_TS ? new Date(SFONDO_TS) : new Date(); }
 const SFONDO = (() => { try { return /^(1|si|sì|true)$/i.test(new URLSearchParams(location.search).get('sfondo') || ''); } catch(e){ return false; } })();
 let renderTimer = null, lastRenderKey = '', bootDone = false, wakeLock = null, toolsTimer = null;
 
@@ -717,7 +787,7 @@ function nextBlock(b){ return b.t === 'M' ? { iso:b.iso, t:'P' } : b.t === 'P' ?
 
 // ═══ Disegno ═══════════════════════════════════════════════════════════════
 // ═══ Cosa mostrare (salvato su questo schermo) ═════════════════════════════
-const VIEW_DEFAULT = { theme:'auto', nightFrom:20, nightTo:7, clock:true, clockStyle:'digital', seconds:true, date:true, reps:true, shifts:true, nShifts:4, alert:true, alertMin:30, rubrica:true };
+const VIEW_DEFAULT = { theme:'auto', nightFrom:20, nightTo:7, clock:true, clockStyle:'digital', seconds:true, date:true, reps:true, shifts:true, nShifts:4, alert:true, alertMin:30, rubrica:true, bars:true };
 let VIEW = Object.assign({}, VIEW_DEFAULT);
 function loadView(){
   try { VIEW = Object.assign({}, VIEW_DEFAULT, JSON.parse(localStorage.getItem('monitor118_view') || '{}')); } catch(e) {}
@@ -730,11 +800,13 @@ function loadView(){
     if(q.has('tema')) VIEW.theme = { notte:'night', scuro:'night', chiaro:'light', auto:'auto', automatico:'auto' }[q.get('tema').toLowerCase()] || VIEW.theme;
     if(q.has('stile')) VIEW.clockStyle = /^anal/i.test(q.get('stile')) ? 'analog' : 'digital';
     if(q.has('minuti')) VIEW.alertMin = Math.max(5, Math.min(120, parseInt(q.get('minuti')) || 30));
+    if(q.has('barre')) VIEW.bars = on(q.get('barre'));
     if(SFONDO){
-      VIEW.seconds = false;                                  // lo sfondo si aggiorna una volta al minuto
-      if(!q.has('tema')) VIEW.theme = 'night';               // spazi scuri dove mettere le icone
-      const mg = q.has('margine') ? Math.max(0, Math.min(40, parseFloat(q.get('margine')) || 0)) : 9;
-      document.documentElement.style.setProperty('--margine', mg + 'vw');
+      if(!q.has('tema')) VIEW.theme = 'night';               // nero pieno attorno, per le icone
+      if(!q.has('rubrica')) VIEW.rubrica = false;            // il codice resta accanto al nome del reperibile
+      if(!q.has('turni')) VIEW.nShifts = 3;
+      if(!q.has('stile')) VIEW.clockStyle = 'digital';
+      document.body.classList.toggle('area-quarto', /^quart/i.test(q.get('area') || ''));
     }
   } catch(e) {}
 }
@@ -748,12 +820,13 @@ function applyView(){
   b.toggle('no-reps', !VIEW.reps); b.toggle('no-shifts', !VIEW.shifts);
   b.toggle('no-data', !VIEW.reps && !VIEW.shifts);
   b.toggle('rub', !!VIEW.rubrica);
-  applyTheme(new Date());
+  b.toggle('no-bars', !VIEW.bars);
+  applyTheme(NOW());
   renderAll();
 }
 // Notte: scelta fissa oppure automatica in base all'ora (di default dalle 20:00 alle 07:00)
 function isNightNow(now){
-  if(VIEW.theme === 'night') return true;
+  if(SFONDO || VIEW.theme === 'night') return true;   // sullo sfondo sempre scuro: attorno c'è il nero delle icone
   if(VIEW.theme === 'light') return false;
   const h = now.getHours(), a = +VIEW.nightFrom, b = +VIEW.nightTo;
   return a > b ? (h >= a || h < b) : (h >= a && h < b);
@@ -769,8 +842,6 @@ function setView(k, v){ VIEW[k] = v; saveView(); applyView(); renderPanel(); }
 // ═══ Orologio ══════════════════════════════════════════════════════════════
 let clockState = null, lastSecShown = -1;
 function buildClock(){
-  const bar = document.getElementById('secbar');
-  if(bar && !bar.children.length) bar.innerHTML = Array.from({ length:60 }, (_, i) => `<i class="${i % 5 === 0 ? 'q' : ''}"></i>`).join('');
   const svg = document.getElementById('clock-svg'); if(!svg || svg.children.length) return;
   let ticks = '', nums = '';
   for(let i = 0; i < 60; i++){
@@ -803,17 +874,21 @@ function setAnalog(now){
   });
 }
 function setDigital(now){
-  const p2 = n => String(n).padStart(2,'0'), s = now.getSeconds();
+  const p2 = n => String(n).padStart(2,'0'), sec = now.getSeconds();
   document.getElementById('dh').textContent = p2(now.getHours());
   document.getElementById('dm').textContent = p2(now.getMinutes());
-  const ds = document.getElementById('ds');
-  if(s !== lastSecShown){
-    ds.textContent = p2(s); ds.classList.remove('tick'); void ds.offsetWidth; ds.classList.add('tick');
-    const bar = document.getElementById('secbar');
-    if(bar) Array.prototype.forEach.call(bar.children, (el, i) => { el.classList.toggle('on', i < s); el.classList.toggle('cur', i === s); });
-    lastSecShown = s;
+  // anello: pieno all'inizio del minuto, si consuma in senso orario fino a sparire a :59
+  const arc = document.getElementById('rc-arc');
+  if(arc && sec !== lastSecShown){
+    if(SFONDO){ arc.style.strokeDashoffset = String(-(sec + now.getMilliseconds() / 1000)); }
+    else if(sec === 0 || lastSecShown === -1 || sec < lastSecShown){
+      arc.classList.add('jump'); arc.style.strokeDashoffset = String(-sec);
+      void arc.getBoundingClientRect(); arc.classList.remove('jump');
+      requestAnimationFrame(() => { arc.style.strokeDashoffset = String(-(sec + 1)); });
+    } else arc.style.strokeDashoffset = String(-(sec + 1));   // scorre fluido fino al secondo successivo
+    lastSecShown = sec;
   }
-  document.getElementById('adigital').innerHTML = p2(now.getHours()) + ':' + p2(now.getMinutes()) + (VIEW.seconds ? '<span class="s">:' + p2(s) + '</span>' : '');
+  document.getElementById('adigital').innerHTML = p2(now.getHours()) + ':' + p2(now.getMinutes()) + (VIEW.seconds ? '<span class="s">:' + p2(sec) + '</span>' : '');
 }
 
 // ═══ Coperture brevi di reperibilità ══════════════════════════════════════
@@ -876,7 +951,7 @@ let currentArrival = null;      // arrivo entro la soglia (null = c'è tempo)
 let arrivalCache = null;        // prossimo arrivo, ricalcolato ogni minuto o quando cambiano i dati
 let testAlert = null;           // prova dalle impostazioni: { dt finto, until }
 function startTestAlert(){
-  const now = new Date();
+  const now = NOW();
   testAlert = { dt: new Date(now.getTime() + Math.max(1, (+VIEW.alertMin || 30) - 6) * 60000 + 59000), until: now.getTime() + 60000 };
   closePanel(); renderAll();
 }
@@ -906,6 +981,50 @@ function renderAlert(now){
   const who = [a.aut.length ? `<strong>Autisti:</strong> ${esc(a.aut.join(', '))}` : '', a.inf.length ? `<strong>Infermieri:</strong> ${esc(a.inf.join(', '))}` : ''].filter(Boolean).join(' · ');
   document.getElementById('al-t').innerHTML = `${a.test ? '<span class="al-test">PROVA</span>' : ''}Cambio turno tra <b>${SFONDO ? Math.max(1, Math.ceil(ms / 60000)) + ' min' : (mm ? mm + ' min ' : '') + String(ss).padStart(2,'0') + ' s'}</b>`;
   document.getElementById('al-s').innerHTML = `Alle <strong>${hm}</strong> arriva ${what}${who ? ' — ' + who : ''}.<br>I reperibili hanno ${esc(VIEW.alertMin)} minuti per arrivare: valuta prima di chiamarli.`;
+}
+
+// ═══ Barre fine turno ═════════════════════════════════════════════════════
+// Turnisti: mattino 06:30–13:15, pomeriggio 12:45–20:10, notte 19:45–07:20 (con lo smonto).
+// Diurnisti: 07:00–13:00 e 13:00–19:00 (prima del cambio orario 06:30–13:42 e 13:15–20:27).
+const TURNISTI_FASCE = { M:['06:30','13:15'], P:['12:45','20:10'], N:['19:45','07:20'] };
+function fmtLeft(ms){ const m = Math.max(0, Math.ceil(ms / 60000)); return m >= 60 ? Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2,'0') + 'm' : m + ' min'; }
+function barHtml(cls, label, start, end, now){
+  if(!start) return `<div class="bar ${cls} off"><div class="bar-l"><b>${label}</b><span></span></div><div class="bar-t"><div class="bar-f" style="width:0"></div></div></div>`;
+  const tot = end - start, left = Math.max(0, end - now), pct = Math.max(0, Math.min(100, left / tot * 100));
+  const hm = d => String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  return `<div class="bar ${cls}"><div class="bar-l"><b>${label}</b><span>fine ${hm(end)} · ${fmtLeft(left)}</span></div><div class="bar-t"><div class="bar-f" style="width:${pct.toFixed(2)}%"></div></div></div>`;
+}
+function renderBars(now){
+  const el = document.getElementById('bars'); if(!el) return;
+  const b = currentBlock(now), f = TURNISTI_FASCE[b.t];
+  const ts = atTime(b.iso, f[0]), te = atTime(b.t === 'N' ? addDays(b.iso, 1) : b.iso, f[1]);
+  const today = ymd(now), nuovo = today >= AUT_DIURNO_FROM, h = now.getHours() + now.getMinutes() / 60;
+  const dm = nuovo ? ['07:00','13:00'] : ['06:30','13:42'], dp = nuovo ? ['13:00','19:00'] : ['13:15','20:27'];
+  const inR = r => { const a = atTime(today, r[0]), z = atTime(today, r[1]); return now >= a && now < z ? [a, z] : null; };
+  const dM = inR(dm), dP = dM ? null : inR(dp);
+  let dHtml;
+  if(dM) dHtml = barHtml('d', 'Diurnisti · Mattino', dM[0], dM[1], now);
+  else if(dP) dHtml = barHtml('d', 'Diurnisti · Pomeriggio', dP[0], dP[1], now);
+  else dHtml = barHtml('d', 'Diurnisti · riprendono alle ' + dm[0], null, null, now);
+  el.innerHTML = barHtml('t', 'Turnisti · ' + BLOCK_INFO[b.t].name, ts, te, now) + dHtml;
+}
+// Riquadro informazioni del PC: lo script lo passa dopo il # (non viene inviato a internet)
+function renderPcInfo(){
+  const el = document.getElementById('pcinfo'); if(!el || !SFONDO) return;
+  let q; try { q = new URLSearchParams((location.hash || '').replace(/^#/, '')); } catch(e){ return; }
+  const rows = [['Nome Computer:', q.get('pc')], ['Nome Utente:', q.get('utente')], ['Indirizzo IP:', q.get('ip')], ['Versione SO:', q.get('so')]].filter(r => r[1]);
+  if(!rows.length){ el.classList.remove('on'); document.body.classList.remove('has-info'); return; }
+  el.innerHTML = `<div class="t">${esc(q.get('titolo') || 'I.S.S. - Servizio Informatico')}</div>` + rows.map(r => `<span>${esc(r[0])}</span><span>${esc(r[1])}</span>`).join('');
+  el.classList.add('on'); document.body.classList.add('has-info');
+}
+// Nessun testo fuori dai bordi: i nomi lunghi si rimpiccioliscono finché non entrano
+function fitTexts(root){
+  (root || document).querySelectorAll('.rep-n, .p span, .blk-t, .bar-l b, .rb-n').forEach(el => {
+    el.style.fontSize = '';
+    if(!el.clientWidth || el.scrollWidth <= el.clientWidth + 1) return;
+    let fs = parseFloat(getComputedStyle(el).fontSize), min = fs * .45, i = 0;
+    while(el.scrollWidth > el.clientWidth + 1 && fs > min && i++ < 30){ fs *= .94; el.style.fontSize = fs + 'px'; }
+  });
 }
 
 // ═══ Reperibili e turni ═══════════════════════════════════════════════════
@@ -1055,8 +1174,9 @@ function renderPanel(){
     <h3>Orologio</h3>
     <div class="row"><span>Orologio</span>${swHtml('clock')}</div>
     <div class="row"><span>Stile</span>${segHtml('clockStyle', [['digital','Digitale'],['analog','Analogico']])}</div>
-    <div class="row"><span>Secondi</span>${swHtml('seconds')}</div>
+    <div class="row"><span>Anello dei secondi</span>${swHtml('seconds')}</div>
     <div class="row"><span>Data</span>${swHtml('date')}</div>
+    <div class="row"><span>Barre fine turno<small>Verde turnisti, azzurra diurnisti</small></span>${swHtml('bars')}</div>
     <h3>Reperibilità e turni</h3>
     <div class="row"><span>Reperibili ora</span>${swHtml('reps')}</div>
     <div class="row"><span>Prossimi turni</span>${swHtml('shifts')}</div>
@@ -1081,7 +1201,7 @@ function renderStatus(){
 }
 function setStatus(k, s, msg){ STATUS[k].s = s; STATUS[k].msg = msg || ''; if(s === 'ok') STATUS[k].t = new Date(); scheduleRender(); }
 function renderAll(){
-  const now = new Date(), slot = slotOfHour(now.getHours());
+  const now = NOW(), slot = slotOfHour(now.getHours());
   document.getElementById('rep-slot').textContent = SLOT_T[slot][0] + ' – ' + SLOT_T[slot][1];
   try { arrivalCache = nextArrival(now); } catch(e){ console.error('arrivo', e); }
   try { renderAlert(now); } catch(e){ console.error('avviso', e); }
@@ -1089,6 +1209,8 @@ function renderAll(){
   try { renderRep(document.getElementById('rep-inf'), 'inf', now); } catch(e){ console.error('rep infermieri', e); }
   try { renderBlocks(now); } catch(e){ console.error('turni', e); }
   try { renderRubrica(); } catch(e){ console.error('rubrica', e); }
+  try { renderBars(now); } catch(e){ console.error('barre', e); }
+  try { fitTexts(); } catch(e) {}
   renderStatus();
   lastRenderKey = renderKey(now);
   if(!bootDone && (AUT.loadedAt || infSettings !== null)) { bootDone = true; document.getElementById('boot').classList.add('gone'); }
@@ -1096,11 +1218,12 @@ function renderAll(){
 function renderKey(now){ return ymd(now) + '|' + now.getHours() + '|' + now.getMinutes(); }
 function scheduleRender(){ clearTimeout(renderTimer); renderTimer = setTimeout(renderAll, 150); }
 function tickClock(){
-  const now = new Date();
+  const now = NOW();
   setDigital(now);
   if(VIEW.clockStyle === 'analog') setAnalog(now);
   document.getElementById('date').textContent = now.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
   if(renderKey(now) !== lastRenderKey) { applyTheme(now); renderAll(); }
+  else if(now.getSeconds() % 5 === 0 && !SFONDO) { try { renderBars(now); fitTexts(document.getElementById('bars')); } catch(e) {} }
   else { const wasOn = !!currentArrival; renderAlert(now); if(wasOn !== !!currentArrival) renderAll(); }   // conto alla rovescia al secondo
   if(now.getHours() === CFG.RELOAD_HOUR && now.getMinutes() === 0 && now.getSeconds() < 2 && performance.now() > 120000) location.reload();
 }
@@ -1369,6 +1492,7 @@ function boot(){
   loadCache();
   applyView();
   startClock();
+  try { document.fonts.ready.then(() => fitTexts()); } catch(e) {}
   loadAutXlsx();
   startAutFirebase();
   startInfFirebase();
@@ -1378,10 +1502,12 @@ function boot(){
   document.addEventListener('dblclick', e => { if(!e.target.closest('.pn')) toggleFullscreen(); });
   document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closePanel(); if(rubEdit) closeRubEditor(); } });
   keepAwake(); poke();
+  window.addEventListener('resize', () => { clearTimeout(window.__fitT); window.__fitT = setTimeout(() => fitTexts(), 200); });
   setTimeout(() => { if(!bootDone){ bootDone = true; document.getElementById('boot').classList.add('gone'); } }, 12000);
 }
 function bootSfondo(){
   document.body.classList.add('sfondo');
+  renderPcInfo();
   bootDone = true; document.getElementById('boot').classList.add('gone');
   loadView(); rubLoadLocal(); loadCache(); applyView();
   startClock();
@@ -1389,6 +1515,7 @@ function bootSfondo(){
   restLoadOnce();
   // aperta in un browser normale continua ad aggiornarsi; per la "foto" basta il primo caricamento
   setInterval(() => { loadAutXlsx(); restLoadOnce(); }, 60000);
+  try { document.fonts.ready.then(() => fitTexts()); } catch(e) {}
 }
 if(typeof window !== 'undefined' && typeof document !== 'undefined' && !window.__MONITOR_TEST__) boot();
 </script>

@@ -31,10 +31,12 @@ exit /b 0
 # Modalità ($RLMode): installa | run | ferma | disinstalla
 # ═══════════════════════════════════════════════════════════════════════════
 # ── Impostazioni ──
-# Parametri utili nell'indirizzo: margine=9 (fascia libera a sinistra per le icone, % della larghezza)
-# tema=notte|chiaro  turni=0..6  rubrica=1|0  orologio=1|0  reperibili=1|0  avviso=1|0  minuti=30
-$Url        = 'https://centrale118rsm-code.github.io/Reperibili-Live/?sfondo=1&margine=9'
-$Intervallo = 60        # secondi fra un aggiornamento e l'altro (60 = ogni minuto, allineato all'orologio)
+# Parametri utili nell'indirizzo:
+#   area=meta   (poco meno della metà destra, tutta l'altezza)   area=quarto (quarto in alto a destra)
+#   turni=0..6  barre=1|0  orologio=1|0  reperibili=1|0  avviso=1|0  minuti=30  rubrica=1|0
+$Url        = 'https://centrale118rsm-code.github.io/Reperibili-Live/?sfondo=1&area=meta'
+$Intervallo = 15        # secondi fra un aggiornamento e l'altro (15 = l'anello dei secondi avanza a scatti di 15 s; 30 o 60 = meno carico)
+$Titolo     = 'I.S.S. - Servizio Informatico'   # riquadro informazioni in basso a destra (vuoto = niente riquadro)
 $AttesaDati = 20000     # millisecondi lasciati alla pagina per caricare turni e reperibili
 
 $ErrorActionPreference = 'Continue'
@@ -134,6 +136,17 @@ try {
   Set-ItemProperty 'HKCU:\Control Panel\Desktop' -Name TileWallpaper -Value '0'
 } catch {}
 Log ("Avvio con $edge" + $(if($wpOk){''}else{' (modalità ridotta)'}))
+# informazioni del PC per il riquadro in basso a destra (passate dopo il #, non vengono inviate a internet)
+function Enc($x){ return [Uri]::EscapeDataString([string]$x) }
+$info = ''
+if($Titolo){
+  $ip = ''; $so = ''
+  try { $ip = (Get-CimInstance Win32_NetworkAdapterConfiguration -Filter 'IPEnabled=True' | ForEach-Object { $_.IPAddress } | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' -and $_ -notlike '169.254.*' } | Select-Object -First 1) } catch {}
+  try { $cap = (Get-CimInstance Win32_OperatingSystem).Caption; if($cap -match 'Windows\s+\d+'){ $so = $Matches[0] } else { $so = $cap } } catch {}
+  $info = '#titolo=' + (Enc $Titolo) + '&pc=' + (Enc $env:COMPUTERNAME) + '&utente=' + (Enc $env:USERNAME) + '&ip=' + (Enc $ip) + '&so=' + (Enc $so)
+}
+function OraMs { try { return [DateTimeOffset]::Now.ToUnixTimeMilliseconds() } catch { return [long](((Get-Date).ToUniversalTime() - [datetime]'1970-01-01').TotalMilliseconds) } }
+$ofs = 7000      # quanto ci mette di solito la foto a diventare sfondo (si aggiorna da solo)
 $n = 0
 while($true){
   try {
@@ -142,7 +155,8 @@ while($true){
     $tmp  = Join-Path $dir 'scatto.png'
     Remove-Item $tmp -Force -ErrorAction SilentlyContinue
     $sep = '?'; if($Url -match '\?'){ $sep = '&' }
-    $u = $Url + $sep + 't=' + (Get-Date -Format 'yyyyMMddHHmmss')
+    $t0 = OraMs
+    $u = $Url + $sep + 'ts=' + $t0 + '&ofs=' + $ofs + $info
     $argv = "--headless --disable-gpu --hide-scrollbars --mute-audio --no-first-run --no-default-browser-check " +
             "--user-data-dir=`"$profilo`" --window-size=$w,$h --force-device-scale-factor=1 " +
             "--virtual-time-budget=$AttesaDati --screenshot=`"$tmp`" `"$u`""
@@ -151,14 +165,19 @@ while($true){
     if(Get-Process -Id $p.Id -ErrorAction SilentlyContinue){ Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; Log 'Edge non ha risposto in tempo' }
     if((Test-Path $tmp) -and (Get-Item $tmp).Length -gt 15000){
       Move-Item $tmp $file -Force
-      if(Imposta-Sfondo $file){ $n++ } else { Log 'Windows ha rifiutato lo sfondo (forse bloccato dai criteri aziendali)' }
+      if(Imposta-Sfondo $file){
+        $n++
+        $durata = (OraMs) - $t0
+        if($durata -gt 1500 -and $durata -lt 45000){ $ofs = [int](($ofs * 2 + $durata) / 3) }
+      } else { Log 'Windows ha rifiutato lo sfondo (forse bloccato dai criteri aziendali)' }
     } else { Log 'Nessuna immagine prodotta (Edge invisibile bloccato o pagina non raggiungibile)' }
   } catch { Log ('Errore: ' + $_.Exception.Message) }
-  if($Intervallo -eq 60){
-    # riparte un attimo dopo l'inizio del minuto, così l'ora sullo sfondo è quella giusta
-    $now = Get-Date
-    $ms = (60 - $now.Second) * 1000 - $now.Millisecond + 300
-    if($ms -lt 1000){ $ms = 1000 }
-    Start-Sleep -Milliseconds $ms
-  } else { if($Intervallo -lt 15){ $Intervallo = 15 }; Start-Sleep -Seconds $Intervallo }
+  # riparte in modo che la nuova immagine compaia allo scoccare di :00, :15, :30, :45 (o del minuto)
+  if($Intervallo -lt 10){ $Intervallo = 10 }
+  $ora = OraMs
+  $passo = [long]$Intervallo * 1000
+  $prossimo = [long]([Math]::Floor(($ora + $ofs) / $passo) + 1) * $passo - $ofs
+  $attesa = $prossimo - $ora
+  if($attesa -lt 1000){ $attesa += $passo }
+  Start-Sleep -Milliseconds ([int]$attesa)
 }
