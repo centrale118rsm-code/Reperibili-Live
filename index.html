@@ -365,10 +365,11 @@ body.sfondo .tt tr.M{--sc:#a5d8ff}
 body.sfondo .tt tr.P{--sc:#4dabf7}
 body.sfondo .tt tr.N{--sc:#3b6ef5}
 body.sfondo .tt tr.arriving{--sc:var(--red)}
-body.sfondo .tt td{--bw:max(1.5px, calc(var(--u,1) * 1.5px));background:transparent!important;box-shadow:none!important;
-  border-top:var(--bw) solid var(--sc)!important;border-bottom:var(--bw) solid var(--sc)!important}
-body.sfondo .tt td:first-child{border-left:var(--bw) solid var(--sc)!important;border-radius:calc(var(--u,1) * 9px) 0 0 calc(var(--u,1) * 9px)}
-body.sfondo .tt td:last-child{border-right:var(--bw) solid var(--sc)!important;border-radius:0 calc(var(--u,1) * 9px) calc(var(--u,1) * 9px) 0}
+/* contorno: blu scuro uguale per tutti i turni (il nome del turno resta nella scala di blu) */
+body.sfondo .tt td{--bc:#1e40af;--bw:max(1.5px, calc(var(--u,1) * 1.5px));background:transparent!important;box-shadow:none!important;
+  border-top:var(--bw) solid var(--bc)!important;border-bottom:var(--bw) solid var(--bc)!important}
+body.sfondo .tt td:first-child{border-left:var(--bw) solid var(--bc)!important;border-radius:calc(var(--u,1) * 9px) 0 0 calc(var(--u,1) * 9px)}
+body.sfondo .tt td:last-child{border-right:var(--bw) solid var(--bc)!important;border-radius:0 calc(var(--u,1) * 9px) calc(var(--u,1) * 9px) 0}
 body.sfondo .tt tr.cur td{--bw:max(2.5px, calc(var(--u,1) * 2.5px));background:#0b1018!important}
 body.sfondo .tt-n{color:var(--sc)!important;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
 body.sfondo .tt-d{color:var(--tx3);font-weight:700}
@@ -377,6 +378,12 @@ body.sfondo .tt tr.arriving .tt-d b{color:#fff!important}
 body.sfondo .tt-o{color:var(--tx3);font-weight:600}
 body.sfondo .tt .p{font-weight:700;flex-wrap:wrap;row-gap:0}
 body.sfondo .tt .p span{flex:0 0 auto;max-width:100%}   /* se non c'è spazio è l'etichetta ad andare a capo, il nome resta grande */
+/* nomi dei reperibili al centro del riquadro: a destra uno spazio vuoto largo quanto l'etichetta "Autista/Infermiere" */
+body.sf2 .rep{grid-template-columns:calc(var(--u) * 100px) minmax(0,1fr) calc(var(--u) * 100px)!important;padding-right:calc(var(--u) * 16px)!important}
+body.sf2 .rep::after{content:""}
+body.sf2 .rep-body{text-align:center}
+body.sf2 .rep-line{justify-content:center}
+body.sf2 .rep-x{justify-content:center}
 /* fasce di reperibilità del turno in corso (fino alle 13:00) */
 .fs{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--hair);border-radius:calc(var(--u) * 9px);overflow:hidden;table-layout:fixed;margin-top:calc(var(--u) * 7px)}
 .fs th{font-size:calc(var(--u) * 10px);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);text-align:left;padding:calc(var(--u) * 6px) calc(var(--u) * 12px);border-bottom:1px solid var(--hair)}
