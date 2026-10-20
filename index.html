@@ -1068,35 +1068,20 @@ function copUpcoming(list, now){
 
 // ═══ Arrivo del prossimo turno (avviso) ═══════════════════════════════════
 const TURNISTI_START = { M:'06:30', P:'12:45', N:'19:45' };
-function infTurnistaStart(t){
-  const so = infSettings && infSettings.scheduleOverride && infSettings.scheduleOverride.SCHEDULE;
-  const m = so && String(so[t] || '').match(/(\d{1,2})[:.](\d{2})/);
-  return m ? m[1].padStart(2,'0') + ':' + m[2] : TURNISTI_START[t];
-}
-function startHM(p, t, kind){
-  if(p.hours && (p.diurno || p.custom)){
-    const m = String(p.hours).match(/^(\d{1,2})(?:[:.](\d{2}))?/);
-    if(m) return m[1].padStart(2,'0') + ':' + (m[2] || '00');
-  }
-  return kind === 'inf' ? infTurnistaStart(t) : TURNISTI_START[t];
-}
+// Prossimo cambio turno: solo gli orari fissi dei turnisti (mattino 06:30, pomeriggio 12:45, notte 19:45).
+// I diurnisti e gli orari particolari non contano. Chi arriva = i turnisti di quel turno.
 function nextArrival(now){
-  const today = ymd(now), ev = {};
-  [today, addDays(today,1)].forEach(d => ['M','P','N'].forEach(t => {
-    [['aut', autWorkers(d, t)], ['inf', infWorkers(d, t, today)]].forEach(([kind, list]) => {
-      (list || []).forEach(p => {
-        const dt = atTime(d, startHM(p, t, kind)); if(dt <= now) return;
-        const k = dt.getTime(), e = ev[k] = ev[k] || { dt, iso:d, t, aut:[], inf:[], diurni:0, total:0 };
-        e[kind].push(p.name); e.total++; if(p.diurno) e.diurni++;
-      });
-    });
-  }));
-  let keys = Object.keys(ev).map(Number).sort((a, b) => a - b);
-  if(!keys.length){   // nessun dato: orari standard dei turnisti
-    [today, addDays(today,1)].forEach(d => Object.keys(TURNISTI_START).forEach(t => { const dt = atTime(d, TURNISTI_START[t]); if(dt > now) ev[dt.getTime()] = { dt, iso:d, t, aut:[], inf:[], diurni:0, total:0 }; }));
-    keys = Object.keys(ev).map(Number).sort((a, b) => a - b);
+  const today = ymd(now);
+  for(const d of [today, addDays(today, 1)]){
+    for(const t of ['M', 'P', 'N']){
+      const dt = atTime(d, TURNISTI_START[t]);
+      if(dt <= now) continue;
+      const turnisti = l => (l || []).filter(p => !p.diurno).map(p => p.name);
+      const aut = turnisti(autWorkers(d, t)), inf = turnisti(infWorkers(d, t, today));
+      return { dt, iso:d, t, aut, inf, diurni:0, total: aut.length + inf.length };
+    }
   }
-  return keys.length ? ev[keys[0]] : null;
+  return null;
 }
 let currentArrival = null;      // arrivo entro la soglia (null = c'è tempo)
 let arrivalCache = null;        // prossimo arrivo, ricalcolato ogni minuto o quando cambiano i dati
