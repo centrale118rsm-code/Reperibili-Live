@@ -115,9 +115,17 @@ body.no-shifts .rep-n{font-size:min(7vw,12vh)}
 .rep-body{min-width:0}
 .rep-line{display:flex;align-items:center;gap:.9em;min-width:0}
 .rep-line .rep-n{flex:0 1 auto;min-width:0}
-.rep-notes{display:flex;flex-direction:column;gap:.15em;flex:0 1 auto;min-width:0;max-width:24em;padding-left:.8em;border-left:2px solid var(--line);font-size:min(1.5vw,2.6vh)}
-.rep-note{line-height:1.2;white-space:normal;overflow-wrap:anywhere}
-.rep-note.s{font-size:.75em} .rep-note.m{font-size:1em} .rep-note.l{font-size:1.35em}
+/* riquadro note a destra dei reperibili: senza note i reperibili restano al centro */
+.reps-row{display:flex;gap:1.4vw;align-items:stretch}
+.reps-col{flex:1 1 auto;min-width:0}
+.note-col{display:none}
+.reps-row.has-note .note-col{display:flex;flex-direction:column;flex:0 1 34%;min-width:0}
+.note-box{flex:1;margin-top:1.6vh;border:1.5px solid var(--line);border-radius:min(1.6vw,2.6vh);padding:2vh 1.6vw;display:flex;flex-direction:column;justify-content:center;gap:1.2vh;background:var(--card);box-shadow:var(--shadow);font-size:min(1.5vw,2.6vh)}
+.note-it{line-height:1.25;overflow-wrap:anywhere}
+.note-it + .note-it{padding-top:1.2vh;border-top:1px solid var(--line2)}
+.note-it.s{font-size:.78em} .note-it.m{font-size:1em} .note-it.l{font-size:1.4em}
+.dot.note{background:#f59e0b;animation:none}
+body:not(.night) .note-box .note-it{filter:brightness(.8) saturate(1.3)}
 .rep-n.none{color:var(--tx3);font-weight:500}
 .rep-x{display:flex;flex-wrap:wrap;align-items:center;gap:.4em .9em;margin-top:.5vh;font-size:min(1.05vw,1.8vh);font-weight:500;color:var(--tx3)}
 .rep-x:empty{display:none}
@@ -299,12 +307,18 @@ body.sfondo:not(.area-quarto) .kicker{font-size:calc(var(--u) * 11px)}
 body.sfondo:not(.area-quarto) .reps{gap:calc(var(--u) * 8px);margin-top:calc(var(--u) * 7px);display:grid;width:max-content;max-width:100%}
 /* i due riquadri finiscono poco dopo il nome più lungo e sono sempre larghi uguale */
 /* reperibili al centro della colonna (titolo compreso) */
-body.sfondo:not(.area-quarto) .reps-wrap{display:flex;flex-direction:column;align-items:center}
+body.sfondo:not(.area-quarto) .reps-row{justify-content:center;gap:calc(var(--u) * 18px)}
+body.sfondo:not(.area-quarto) .reps-col{flex:0 0 auto;display:flex;flex-direction:column;align-items:center}
+body.sfondo:not(.area-quarto) .reps-row.has-note{justify-content:space-between}
+body.sfondo:not(.area-quarto) .reps-row.has-note .reps-col{align-items:flex-start}
+body.sfondo:not(.area-quarto) .reps-row.has-note .note-col{flex:1 1 0}
+body.sfondo:not(.area-quarto) .note-box{margin-top:calc(var(--u) * 7px);border:max(2px, calc(var(--u) * 2px)) solid #3a3220;border-radius:calc(var(--u) * 10px);
+  padding:calc(var(--u) * 12px) calc(var(--u) * 18px);gap:calc(var(--u) * 10px);background:#0b0a07;box-shadow:none;font-size:calc(var(--u) * 19px)}
+body.sfondo:not(.area-quarto) .note-it + .note-it{padding-top:calc(var(--u) * 10px);border-top-color:#2a2618}
 body.sfondo:not(.area-quarto) .rep{grid-template-columns:calc(var(--u) * 100px) minmax(0,1fr);gap:calc(var(--u) * 12px);padding:calc(var(--u) * 9px) calc(var(--u) * 30px) calc(var(--u) * 9px) calc(var(--u) * 16px);border-radius:calc(var(--u) * 10px);border-width:max(2px, calc(var(--u) * 2px))}
 body.sfondo:not(.area-quarto) .rep-l{font-size:calc(var(--u) * 13px)}
 body.sfondo:not(.area-quarto) .rep-n{font-size:calc(var(--u) * 34px)!important}
-body.sfondo:not(.area-quarto) .rep-line{gap:calc(var(--u) * 14px)}
-body.sfondo:not(.area-quarto) .rep-notes{font-size:calc(var(--u) * 16px);max-width:calc(var(--u) * 340px);padding-left:calc(var(--u) * 12px);border-left-color:#2a3242}
+
 body.sfondo:not(.area-quarto) .rep-x{font-size:calc(var(--u) * 12px)}
 body.sfondo:not(.area-quarto) .blocks{margin-top:calc(var(--u) * 7px)}
 body.sfondo:not(.area-quarto) .tt{border-radius:calc(var(--u) * 9px)}
@@ -387,10 +401,15 @@ body.sfondo.area-quarto .tt .p{font-size:min(1.4cqw,2.5cqh)}
 
   <section class="data-col">
     <div class="reps-wrap">
-      <div class="kicker"><span class="dot"></span><span>Reperibili ora</span><span class="pill" id="rep-slot">—</span></div>
-      <div class="reps">
-        <div class="rep aut" id="rep-aut"></div>
-        <div class="rep inf" id="rep-inf"></div>
+      <div class="reps-row" id="reps-row">
+        <div class="reps-col">
+          <div class="kicker"><span class="dot"></span><span>Reperibili ora</span><span class="pill" id="rep-slot">—</span></div>
+          <div class="reps">
+            <div class="rep aut" id="rep-aut"></div>
+            <div class="rep inf" id="rep-inf"></div>
+          </div>
+        </div>
+        <div class="note-col" id="note-col"></div>
       </div>
     </div>
     <div class="shifts-wrap">
@@ -1125,9 +1144,8 @@ function renderRep(el, kind, now){
   if(next && (!cop || next.id !== cop.id)) extra.push(`<span class="cop-next">Copertura ${next.from}–${next.to}: ${esc(disp(next.sostituto))}</span>`);
   el.classList.toggle('cov', !!cop);
   el.classList.toggle('soon', !!currentArrival); el.classList.toggle('safe', !currentArrival && !!arrivalCache);
-  const notes = noteFor(kind, now);
   el.innerHTML = `<div class="rep-l">${kind === 'aut' ? 'Autista' : 'Infermiere'}</div>
-    <div class="rep-body"><div class="rep-line"><div class="rep-n${who ? '' : ' none'}">${who ? esc(disp(who)) : (loaded ? 'Nessuno' : '…')}</div>${notes}</div><div class="rep-x">${extra.join('')}</div></div>`;
+    <div class="rep-body"><div class="rep-line"><div class="rep-n${who ? '' : ' none'}">${who ? esc(disp(who)) : (loaded ? 'Nessuno' : '…')}</div></div><div class="rep-x">${extra.join('')}</div></div>`;
 }
 // ═══ Note accanto ai reperibili (scritte da codici.html in admin_config/monitor_note) ═══
 let NOTE = {};
@@ -1139,15 +1157,16 @@ function notaAttiva(n, now){
   const a = n.dal ? new Date(n.dal) : null, b = n.al ? new Date(n.al) : null;
   return (!a || isNaN(a) || now >= a) && (!b || isNaN(b) || now < b);
 }
-function noteFor(kind, now){
-  const t = kind === 'aut' ? 'autista' : 'infermiere';
-  const list = Object.keys(NOTE).map(k => NOTE[k]).filter(n => n && (n.target === t || n.target === 'entrambi') && notaAttiva(n, now))
+function renderNotes(now){
+  const col = document.getElementById('note-col'), row = document.getElementById('reps-row'); if(!col || !row) return;
+  const list = Object.keys(NOTE).map(k => NOTE[k]).filter(n => notaAttiva(n, now))
     .sort((a, b) => String(a.creata || '').localeCompare(String(b.creata || '')));
-  if(!list.length) return '';
-  return `<div class="rep-notes">${list.map(n => {
-    const st = [`color:${NOTE_COLORI[n.colore] || NOTE_COLORI.bianco}`, `font-weight:${n.grassetto ? 700 : 500}`, n.corsivo ? 'font-style:italic' : '', n.maiuscolo ? 'text-transform:uppercase;letter-spacing:.03em' : ''].filter(Boolean).join(';');
-    return `<div class="rep-note ${n.dim === 's' || n.dim === 'l' ? n.dim : 'm'}" style="${st}">${esc(String(n.testo).trim()).replace(/\n/g, '<br>')}</div>`;
-  }).join('')}</div>`;
+  row.classList.toggle('has-note', list.length > 0);
+  col.innerHTML = list.length ? `<div class="kicker"><span class="dot note"></span><span>Note</span></div>
+    <div class="note-box">${list.map(n => {
+      const st = [`color:${NOTE_COLORI[n.colore] || NOTE_COLORI.bianco}`, `font-weight:${n.grassetto ? 700 : 500}`, n.corsivo ? 'font-style:italic' : '', n.maiuscolo ? 'text-transform:uppercase;letter-spacing:.03em' : ''].filter(Boolean).join(';');
+      return `<div class="note-it ${n.dim === 's' || n.dim === 'l' ? n.dim : 'm'}" style="${st}">${esc(String(n.testo).trim()).replace(/\n/g, '<br>')}</div>`;
+    }).join('')}</div>` : '';
 }
 function groupHtml(kind, list, repName){
   let body;
@@ -1343,6 +1362,7 @@ function renderAll(){
   try { renderAlert(now); } catch(e){ console.error('avviso', e); }
   try { renderRep(document.getElementById('rep-aut'), 'aut', now); } catch(e){ console.error('rep autisti', e); }
   try { renderRep(document.getElementById('rep-inf'), 'inf', now); } catch(e){ console.error('rep infermieri', e); }
+  try { renderNotes(now); } catch(e){ console.error('note', e); }
   try { renderBlocks(now); } catch(e){ console.error('turni', e); }
   try { renderRubrica(); } catch(e){ console.error('rubrica', e); }
   try { fitTexts(); } catch(e) {}

@@ -77,8 +77,11 @@ textarea.nt:focus{outline:2px solid var(--tx3);outline-offset:-1px;background:va
 .tg{font:inherit;font-size:14px;font-weight:600;color:var(--tx2);background:var(--field);border:1px solid var(--line);border-radius:9px;padding:6px 11px;cursor:pointer;min-width:38px}
 .tg.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 .prev{margin-top:16px;background:#000;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;min-height:64px;overflow:hidden}
-.prev .pn{font-size:30px;font-weight:700;letter-spacing:-.03em;color:#e6e9f0;white-space:nowrap}
-.prev .pt2{border-left:2px solid #2a3242;padding-left:12px;line-height:1.2;overflow-wrap:anywhere;min-width:0}
+.prev{align-items:stretch}
+.prev .pr{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
+.prev .pn{font-size:17px;font-weight:700;letter-spacing:-.02em;color:#e6e9f0;white-space:nowrap;border:2px solid #22c55e;border-radius:8px;padding:5px 12px}
+.prev .pbox{flex:1;min-width:0;border:2px solid #3a3220;background:#0b0a07;border-radius:8px;padding:8px 12px;display:flex;align-items:center}
+.prev .pt2{line-height:1.25;overflow-wrap:anywhere;min-width:0}
 .pt2.s{font-size:12px} .pt2.m{font-size:16px} .pt2.l{font-size:21px}
 .nact{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .nerr{color:var(--red);font-size:13px;font-weight:600;margin-top:8px;min-height:1em}
@@ -125,7 +128,7 @@ textarea.nt:focus{outline:2px solid var(--tx3);outline-offset:-1px;background:va
   <div class="warn" id="warn"></div>
 
   <h2 class="h2" id="note-sez">Note sui reperibili</h2>
-  <p class="sub">Una nota compare accanto al nome del reperibile sullo sfondo e sul monitor, per il tempo che scegli.</p>
+  <p class="sub">Le note compaiono in un riquadro a destra dei reperibili (sullo sfondo e sul monitor), per il tempo che scegli: un promemoria, un avviso, qualsiasi cosa.<br>Senza note attive i reperibili restano al centro.</p>
   <div class="ncols">
     <div class="ncard" id="nform"></div>
     <div class="ncard"><div class="ch"><b class="plain">Note</b><span id="ncount"></span></div><div id="nlist"></div></div>
@@ -257,8 +260,7 @@ function renderForm(){
     : '';
   document.getElementById('nform').innerHTML = `
     <div class="fl">${nEditId ? 'Modifica nota' : 'Nuova nota'}</div>
-    <textarea class="nt" id="nt" maxlength="140" placeholder="Es. in ritardo di 10 minuti · chiamare sul cellulare" oninput="NF.testo=this.value;renderPrev()">${esc(f.testo)}</textarea>
-    <div class="fl">Dove</div>${sg('target', [['autista','Autista'],['infermiere','Infermiere'],['entrambi','Entrambi']])}
+    <textarea class="nt" id="nt" maxlength="140" placeholder="Es. Ricordarsi di andare dal meccanico" oninput="NF.testo=this.value;renderPrev()">${esc(f.testo)}</textarea>
     <div class="fl">Quando</div>${sg('quando', [['sempre','Sempre visibile'],['durata','Per un tempo'],['intervallo','Dal… al…']])}${when}
     <div class="fl">Formato</div>
     <div class="sw8">${sg('dim', [['s','Piccolo'],['m','Normale'],['l','Grande']])}</div>
@@ -274,9 +276,9 @@ function renderForm(){
 }
 function renderPrev(){
   const el = document.getElementById('nprev'); if(!el) return;
-  const nome = NF.target === 'infermiere' ? 'CASTELLANI' : 'SARTI';
   const t = String(NF.testo || '').trim();
-  el.innerHTML = `<span class="pn">${nome}</span>${t ? `<span class="pt2 ${NF.dim}" style="${stileNota(NF)}">${esc(t).replace(/\n/g, '<br>')}</span>` : '<span style="color:#566074;font-size:13px">anteprima della nota</span>'}`;
+  el.innerHTML = `<div class="pr"><span class="pn">SARTI</span><span class="pn">CASTELLANI</span></div>
+    <div class="pbox">${t ? `<span class="pt2 ${NF.dim}" style="${stileNota(NF)}">${esc(t).replace(/\n/g, '<br>')}</span>` : '<span style="color:#566074;font-size:13px">anteprima della nota</span>'}</div>`;
 }
 function nfSet(k, v){ NF[k] = v; const t = document.getElementById('nt'); if(t) NF.testo = t.value; renderForm(); }
 function renderNoteList(){
@@ -285,7 +287,7 @@ function renderNoteList(){
   document.getElementById('nlist').innerHTML = ids.length ? ids.map(id => {
     const n = NOTE[id], st = statoNota(n);
     return `<div class="ni"><div class="nb"><div class="ntx ${n.dim || 'm'}" style="${stileNota(n)};font-size:${n.dim === 's' ? 12 : n.dim === 'l' ? 19 : 15}px">${esc(n.testo).replace(/\n/g, '<br>')}</div>
-      <div class="nmeta"><span class="stt ${st.cls}">${st.t}</span><span>${TARGET[n.target] || TARGET.entrambi}</span></div></div>
+      <div class="nmeta"><span class="stt ${st.cls}">${st.t}</span></div></div>
       <div class="nbt"><button onclick="modificaNota('${id}')">Modifica</button><button class="del2" onclick="eliminaNota('${id}')">Elimina</button></div></div>`;
   }).join('') : '<div class="nempty">Nessuna nota. Quelle scadute restano qui finché non le elimini.</div>';
 }
