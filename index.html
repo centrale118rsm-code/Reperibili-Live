@@ -308,6 +308,13 @@ body.sfondo:not(.area-quarto) .tt .p{font-size:calc(var(--u) * 17px)}
 body.sfondo:not(.area-quarto) .tt-ced{font-size:calc(var(--u) * 10px)}
 body.sfondo.rub:not(.area-quarto) #rubsf{display:block;flex:0 0 auto;border:1px solid var(--hair);border-radius:calc(var(--u) * 9px);
   padding:calc(var(--u) * 9px) calc(var(--u) * 16px) calc(var(--u) * 11px);font-size:max(14px, calc(var(--u) * 15px))}
+/* sfondo e finestra: nero pieno anche su schermi/finestre verticali (dove valgono le regole per telefono) */
+html.nero, html.nero body{background:#000!important;height:100%!important;overflow:hidden!important}
+/* finestra senza bordi: la colonna occupa tutta la finestra */
+body.finestra{--tb:0px;--info-space:2.4vh}
+body.finestra:not(.area-quarto){--area-w:calc(100vw - 4.4vw);--col-r:2.2vw}
+body.finestra:not(.area-quarto) main{top:2.4vh}
+body.finestra .dclock .sec{font-size:.4em;color:var(--tx3)}
 /* quarto in alto a destra: ora e reperibili a sinistra, turni a destra */
 body.sfondo.area-quarto main{display:grid!important;grid-template-columns:minmax(0,44fr) minmax(0,56fr);grid-template-rows:auto 1fr;column-gap:3cqw;row-gap:2.4cqh;align-content:start}
 body.sfondo.area-quarto .data-col{display:contents}
@@ -476,7 +483,10 @@ let dbAut = null, dbInf = null, authInf = null;
 // In modalità sfondo lo script passa l'istante in cui l'immagine comparirà (ts): l'orologio mostra quello
 const SFONDO_TS = (() => { try { const q = new URLSearchParams(location.search); const t = +q.get('ts'), o = +(q.get('ofs') || 0); return t > 0 ? t + o : 0; } catch(e){ return 0; } })();
 function NOW(){ return SFONDO_TS ? new Date(SFONDO_TS) : new Date(); }
-const SFONDO = (() => { try { return /^(1|si|sì|true)$/i.test(new URLSearchParams(location.search).get('sfondo') || ''); } catch(e){ return false; } })();
+const QP = k => { try { return /^(1|si|sì|true)$/i.test(new URLSearchParams(location.search).get(k) || ''); } catch(e){ return false; } };
+// Modalità finestra (?finestra=1): stessa grafica dello sfondo, a tutta finestra, dati in tempo reale
+const FINESTRA = QP('finestra');
+const SFONDO = QP('sfondo') || FINESTRA;
 let renderTimer = null, lastRenderKey = '', bootDone = false, wakeLock = null, toolsTimer = null;
 
 // ═══ Utilità date ═══════════════════════════════════════════════════════════
@@ -842,7 +852,7 @@ function loadView(){
     if(q.has('minuti')) VIEW.alertMin = Math.max(5, Math.min(120, parseInt(q.get('minuti')) || 30));
     if(SFONDO){
       if(!q.has('tema')) VIEW.theme = 'night';               // nero pieno attorno, per le icone
-      VIEW.seconds = false;                                  // lo sfondo si aggiorna una volta al minuto
+      VIEW.seconds = FINESTRA && !(q.has('secondi') && !on(q.get('secondi')));   // sullo sfondo (foto al minuto) niente secondi
       if(!q.has('rubrica')) VIEW.rubrica = !/^quart/i.test(q.get('area') || '');   // tabella codici (nel quarto non c'è spazio)
       if(!q.has('turni')) VIEW.nShifts = 3;
       if(!q.has('stile')) VIEW.clockStyle = 'digital';
@@ -1063,7 +1073,7 @@ function fitPanel(){
         const cs = getComputedStyle(rb()), gap = parseFloat(getComputedStyle(g).columnGap) || 0;
         const w = Array.from(g.children).reduce((t, c) => t + c.getBoundingClientRect().width, 0) + gap * (g.children.length - 1)
           + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 4;
-        const maxW = innerWidth * (innerHeight < 850 ? .6 : .56);   // schermi bassi: un po' più di spazio in larghezza
+        const maxW = FINESTRA ? main.clientWidth : innerWidth * (innerHeight < 850 ? .6 : .56);   // schermi bassi: un po' più di spazio in larghezza
         if(w > main.clientWidth){ if(w > maxW) return -1; body.style.setProperty('--area-w', Math.ceil(w) + 'px'); }
       }
     }
@@ -1579,6 +1589,7 @@ function poke(){
 
 // ═══ Avvio ═════════════════════════════════════════════════════════════════
 function boot(){
+  if(FINESTRA){ bootFinestra(); return; }
   if(SFONDO){ bootSfondo(); return; }
   loadView();
   rubLoadLocal();
@@ -1598,7 +1609,21 @@ function boot(){
   window.addEventListener('resize', () => { clearTimeout(window.__fitT); window.__fitT = setTimeout(() => fitTexts(), 200); });
   setTimeout(() => { if(!bootDone){ bootDone = true; document.getElementById('boot').classList.add('gone'); } }, 12000);
 }
+function bootFinestra(){
+  document.documentElement.classList.add('nero');
+  document.body.classList.add('sfondo', 'finestra');
+  bootDone = true; document.getElementById('boot').classList.add('gone');
+  loadView(); rubLoadLocal(); loadCache(); applyView();
+  startClock();
+  loadAutXlsx();
+  startAutFirebase();
+  startInfFirebase();
+  setInterval(() => { reloadAll(); if(dbInf && infMode() === 'firebase') watchInfMonths(); }, CFG.EXCEL_REFRESH_MIN * 60000);
+  window.addEventListener('resize', () => { clearTimeout(window.__fitT); window.__fitT = setTimeout(() => fitTexts(), 200); });
+  try { document.fonts.ready.then(() => fitTexts()); } catch(e) {}
+}
 function bootSfondo(){
+  document.documentElement.classList.add('nero');
   document.body.classList.add('sfondo');
   renderPcInfo();
   bootDone = true; document.getElementById('boot').classList.add('gone');
