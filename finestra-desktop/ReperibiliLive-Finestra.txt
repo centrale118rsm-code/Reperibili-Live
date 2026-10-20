@@ -126,12 +126,13 @@ if($wpOk){ try { [void][RLWin]::SetProcessDPIAware() } catch {} }
 try { Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop } catch {}
 
 function Area {
-  $x = 0; $y = 0; $W = 1920; $H = 1040
-  try { $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; $x = $wa.Left; $y = $wa.Top; $W = $wa.Width; $H = $wa.Height } catch {}
-  $w = [int]($W * $Larghezza / 100); if($w -lt 700){ $w = 700 }; if($w -gt $W){ $w = $W }
-  $h = [int]($H * $Altezza / 100); if($h -gt $H){ $h = $H }
-  if($Lato -ne 'sinistra'){ $x = $x + $W - $w }
-  return @($x, $y, $w, $h)
+  # (in PowerShell maiuscole e minuscole sono la stessa variabile: nomi diversi per schermo e finestra)
+  $sx = 0; $sy = 0; $sw = 1920; $sh = 1040
+  try { $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; $sx = $wa.Left; $sy = $wa.Top; $sw = $wa.Width; $sh = $wa.Height } catch {}
+  $fw = [int]($sw * $Larghezza / 100); if($fw -lt 700){ $fw = 700 }; if($fw -gt $sw){ $fw = $sw }
+  $fh = [int]($sh * $Altezza / 100); if($fh -gt $sh){ $fh = $sh }
+  $fx = $sx; if($Lato -ne 'sinistra'){ $fx = $sx + $sw - $fw }
+  return @($fx, $sy, $fw, $fh)
 }
 function Avvia-Edge($r){
   $a = "--app=`"$Url`" --user-data-dir=`"$profilo`" --window-position=$($r[0]),$($r[1]) --window-size=$($r[2]),$($r[3]) " +

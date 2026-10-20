@@ -1,6 +1,8 @@
 @echo off
 title Reperibili Live - finestra fissa
 setlocal
+set "SELF=%~f0"
+if "%SELF:~0,2%"=="\\" goto :rete
 rem  Installatore in un solo file: lo script e' qui in fondo. Viene salvato come testo
 rem  (niente .ps1) in una cartella permessa. Non servono permessi di amministratore.
 rem  Toglie anche lo sfondo Reperibili Live, se c'era, e rimette quello di prima.
@@ -22,6 +24,20 @@ echo.
 echo  Se qualcosa non va, guarda il file registro-finestra.txt nella cartella indicata sopra.
 echo  Per toglierla: Disinstalla-Finestra.cmd
 echo.
+pause
+exit /b 0
+:rete
+rem  Lanciato da una cartella di rete: da li' il PC non permette di avviare PowerShell.
+rem  Si copia in una cartella del PC e la apre, cosi' basta un doppio clic da li'.
+set "LOC=%LOCALAPPDATA%\ReperibiliLive"
+if not exist "%LOC%" mkdir "%LOC%"
+copy /Y "%~f0" "%LOC%\%~nx0" >nul
+echo.
+echo  Questo file si trova in una cartella di rete: da li' il PC non lo lascia partire.
+echo  L'ho copiato in una cartella del computer, che si apre adesso:
+echo  fai doppio clic su %~nx0 da quella cartella.
+echo.
+explorer /select,"%LOC%\%~nx0"
 pause
 exit /b 0
 :::SCRIPT:::
@@ -153,12 +169,13 @@ if($wpOk){ try { [void][RLWin]::SetProcessDPIAware() } catch {} }
 try { Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop } catch {}
 
 function Area {
-  $x = 0; $y = 0; $W = 1920; $H = 1040
-  try { $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; $x = $wa.Left; $y = $wa.Top; $W = $wa.Width; $H = $wa.Height } catch {}
-  $w = [int]($W * $Larghezza / 100); if($w -lt 700){ $w = 700 }; if($w -gt $W){ $w = $W }
-  $h = [int]($H * $Altezza / 100); if($h -gt $H){ $h = $H }
-  if($Lato -ne 'sinistra'){ $x = $x + $W - $w }
-  return @($x, $y, $w, $h)
+  # (in PowerShell maiuscole e minuscole sono la stessa variabile: nomi diversi per schermo e finestra)
+  $sx = 0; $sy = 0; $sw = 1920; $sh = 1040
+  try { $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; $sx = $wa.Left; $sy = $wa.Top; $sw = $wa.Width; $sh = $wa.Height } catch {}
+  $fw = [int]($sw * $Larghezza / 100); if($fw -lt 700){ $fw = 700 }; if($fw -gt $sw){ $fw = $sw }
+  $fh = [int]($sh * $Altezza / 100); if($fh -gt $sh){ $fh = $sh }
+  $fx = $sx; if($Lato -ne 'sinistra'){ $fx = $sx + $sw - $fw }
+  return @($fx, $sy, $fw, $fh)
 }
 function Avvia-Edge($r){
   $a = "--app=`"$Url`" --user-data-dir=`"$profilo`" --window-position=$($r[0]),$($r[1]) --window-size=$($r[2]),$($r[3]) " +
