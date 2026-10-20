@@ -112,6 +112,12 @@ body.sfondo #pcinfo.on{display:grid;position:fixed;right:1.3vw;bottom:calc(var(-
 .rep.aut{--c:var(--aut)} .rep.inf{--c:var(--inf)}
 .rep-n{font-size:min(5.6vw,9.5vh);font-weight:700;letter-spacing:-.035em;line-height:1.02;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
 body.no-shifts .rep-n{font-size:min(7vw,12vh)}
+.rep-body{min-width:0}
+.rep-line{display:flex;align-items:center;gap:.9em;min-width:0}
+.rep-line .rep-n{flex:0 1 auto;min-width:0}
+.rep-notes{display:flex;flex-direction:column;gap:.15em;flex:0 1 auto;min-width:0;max-width:24em;padding-left:.8em;border-left:2px solid var(--line);font-size:min(1.5vw,2.6vh)}
+.rep-note{line-height:1.2;white-space:normal;overflow-wrap:anywhere}
+.rep-note.s{font-size:.75em} .rep-note.m{font-size:1em} .rep-note.l{font-size:1.35em}
 .rep-n.none{color:var(--tx3);font-weight:500}
 .rep-x{display:flex;flex-wrap:wrap;align-items:center;gap:.4em .9em;margin-top:.5vh;font-size:min(1.05vw,1.8vh);font-weight:500;color:var(--tx3)}
 .rep-x:empty{display:none}
@@ -297,6 +303,8 @@ body.sfondo:not(.area-quarto) .reps-wrap{display:flex;flex-direction:column;alig
 body.sfondo:not(.area-quarto) .rep{grid-template-columns:calc(var(--u) * 100px) minmax(0,1fr);gap:calc(var(--u) * 12px);padding:calc(var(--u) * 9px) calc(var(--u) * 30px) calc(var(--u) * 9px) calc(var(--u) * 16px);border-radius:calc(var(--u) * 10px);border-width:max(2px, calc(var(--u) * 2px))}
 body.sfondo:not(.area-quarto) .rep-l{font-size:calc(var(--u) * 13px)}
 body.sfondo:not(.area-quarto) .rep-n{font-size:calc(var(--u) * 34px)!important}
+body.sfondo:not(.area-quarto) .rep-line{gap:calc(var(--u) * 14px)}
+body.sfondo:not(.area-quarto) .rep-notes{font-size:calc(var(--u) * 16px);max-width:calc(var(--u) * 340px);padding-left:calc(var(--u) * 12px);border-left-color:#2a3242}
 body.sfondo:not(.area-quarto) .rep-x{font-size:calc(var(--u) * 12px)}
 body.sfondo:not(.area-quarto) .blocks{margin-top:calc(var(--u) * 7px)}
 body.sfondo:not(.area-quarto) .tt{border-radius:calc(var(--u) * 9px)}
@@ -1117,8 +1125,29 @@ function renderRep(el, kind, now){
   if(next && (!cop || next.id !== cop.id)) extra.push(`<span class="cop-next">Copertura ${next.from}–${next.to}: ${esc(disp(next.sostituto))}</span>`);
   el.classList.toggle('cov', !!cop);
   el.classList.toggle('soon', !!currentArrival); el.classList.toggle('safe', !currentArrival && !!arrivalCache);
+  const notes = noteFor(kind, now);
   el.innerHTML = `<div class="rep-l">${kind === 'aut' ? 'Autista' : 'Infermiere'}</div>
-    <div><div class="rep-n${who ? '' : ' none'}">${who ? esc(disp(who)) : (loaded ? 'Nessuno' : '…')}</div><div class="rep-x">${extra.join('')}</div></div>`;
+    <div class="rep-body"><div class="rep-line"><div class="rep-n${who ? '' : ' none'}">${who ? esc(disp(who)) : (loaded ? 'Nessuno' : '…')}</div>${notes}</div><div class="rep-x">${extra.join('')}</div></div>`;
+}
+// ═══ Note accanto ai reperibili (scritte da codici.html in admin_config/monitor_note) ═══
+let NOTE = {};
+const NOTE_COLORI = { bianco:'#f1f3f7', giallo:'#facc15', arancio:'#fb923c', rosso:'#f87171', verde:'#4ade80', azzurro:'#60a5fa' };
+function applyNote(d){ NOTE = (d && d.note && typeof d.note === 'object') ? d.note : {}; }
+function notaAttiva(n, now){
+  if(!n || !String(n.testo || '').trim() || n.disattiva) return false;
+  if(n.modo !== 'intervallo') return true;
+  const a = n.dal ? new Date(n.dal) : null, b = n.al ? new Date(n.al) : null;
+  return (!a || isNaN(a) || now >= a) && (!b || isNaN(b) || now < b);
+}
+function noteFor(kind, now){
+  const t = kind === 'aut' ? 'autista' : 'infermiere';
+  const list = Object.keys(NOTE).map(k => NOTE[k]).filter(n => n && (n.target === t || n.target === 'entrambi') && notaAttiva(n, now))
+    .sort((a, b) => String(a.creata || '').localeCompare(String(b.creata || '')));
+  if(!list.length) return '';
+  return `<div class="rep-notes">${list.map(n => {
+    const st = [`color:${NOTE_COLORI[n.colore] || NOTE_COLORI.bianco}`, `font-weight:${n.grassetto ? 700 : 500}`, n.corsivo ? 'font-style:italic' : '', n.maiuscolo ? 'text-transform:uppercase;letter-spacing:.03em' : ''].filter(Boolean).join(';');
+    return `<div class="rep-note ${n.dim === 's' || n.dim === 'l' ? n.dim : 'm'}" style="${st}">${esc(String(n.testo).trim()).replace(/\n/g, '<br>')}</div>`;
+  }).join('')}</div>`;
 }
 function groupHtml(kind, list, repName){
   let body;
@@ -1430,6 +1459,7 @@ function startAutFirebase(){
   dbAut.collection('admin_config').doc('bibbia').onSnapshot(doc => { applyAutBibbia(doc.exists ? doc.data() : {}); scheduleRender(); }, fail);
   dbAut.collection('turno_overrides').onSnapshot(snap => { applyAutSwaps(docs(snap)); scheduleRender(); }, fail);
   dbAut.collection('admin_config').doc('monitor_rubrica').onSnapshot(doc => { if(doc.exists) applyRubrica(doc.data()); scheduleRender(); }, e => console.warn('Rubrica non letta da Firebase:', e));
+  dbAut.collection('admin_config').doc('monitor_note').onSnapshot(doc => { applyNote(doc.exists ? doc.data() : {}); scheduleRender(); }, e => console.warn('Note non lette da Firebase:', e));
   // Coperture brevi: un documento per copertura (vedi normCopertura per il formato)
   dbAut.collection('reperibilita_coperture').onSnapshot(snap => {
     const items = []; snap.forEach(doc => items.push({ id: doc.id, data: doc.data() }));
@@ -1551,8 +1581,9 @@ async function restList(cfg, path){
 async function restLoadOnce(){
   const A = FB_AUT, I = FB_INF, safe = p => p.catch(e => { console.warn(e); return null; });
   try {
-    const [ov, man, bib, sw, cop, rub] = await Promise.all([restList(A,'reperibilita_overrides'), restDoc(A,'admin_config/reperibilita_manuale'), restDoc(A,'admin_config/bibbia'),
-      restList(A,'turno_overrides'), safe(restList(A,'reperibilita_coperture')), safe(restDoc(A,'admin_config/monitor_rubrica'))]);
+    const [ov, man, bib, sw, cop, rub, nt] = await Promise.all([restList(A,'reperibilita_overrides'), restDoc(A,'admin_config/reperibilita_manuale'), restDoc(A,'admin_config/bibbia'),
+      restList(A,'turno_overrides'), safe(restList(A,'reperibilita_coperture')), safe(restDoc(A,'admin_config/monitor_rubrica')), safe(restDoc(A,'admin_config/monitor_note'))]);
+    applyNote(nt || {});
     applyAutOverrides(ov.map(x => x.data)); applyAutManual(man); applyAutBibbia(bib); applyAutSwaps(sw.map(x => x.data));
     if(cop) applyAutCoperture(cop); if(rub) applyRubrica(rub);
     setStatus('autFb','ok');
