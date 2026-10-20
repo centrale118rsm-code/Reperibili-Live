@@ -358,23 +358,23 @@ body.sf2 #rubsf{border:0!important;padding:0!important;font-size:max(13px, calc(
 .rbs.vert .rbs-col{gap:calc(var(--u) * 2px)}
 .rbs.vert .vsplit{display:flex;gap:calc(var(--u) * 18px)}
 body.sf2 .rcol{clip-path:inset(0 0 var(--info-space, 0px) 0)}
-/* ── PROSSIMI TURNI (sfondo): ogni turno una riga staccata, blocco pieno nel colore del turno ── */
+/* ── PROSSIMI TURNI (sfondo): ogni turno una riga staccata con il solo contorno colorato (scala di blu) ── */
 body.sfondo .tt{border:0;border-collapse:separate;border-spacing:0 calc(var(--u,1) * 7px);border-radius:0;overflow:visible;background:transparent;margin-top:calc(var(--u,1) * -2px)}
 body.sfondo .tt th{border-bottom:0;padding-top:0;padding-bottom:0}
-body.sfondo .tt tr.M{--sc:#eab308;--st:#1d1600}
-body.sfondo .tt tr.P{--sc:#f97316;--st:#240c00}
-body.sfondo .tt tr.N{--sc:#7c7ff2;--st:#ffffff}
-body.sfondo .tt td{background:#0d1119!important;border-top:1px solid #1e2533;border-bottom:1px solid #1e2533!important;box-shadow:none!important}
-body.sfondo .tt td:last-child{border-right:1px solid #1e2533;border-radius:0 calc(var(--u,1) * 9px) calc(var(--u,1) * 9px) 0}
-body.sfondo .tt td:first-child{background:var(--sc)!important;border-color:var(--sc)!important;border-radius:calc(var(--u,1) * 9px) 0 0 calc(var(--u,1) * 9px)}
-body.sfondo .tt-n{color:var(--st)!important;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
-body.sfondo .tt-d{color:color-mix(in srgb,var(--st) 72%,transparent);font-weight:700}
-body.sfondo .tt-d b{display:inline-block;margin-left:.35em;padding:.08em .45em;border-radius:.3em;background:var(--st);color:var(--sc)!important;font-weight:800;letter-spacing:.06em}
-body.sfondo .tt-o{color:color-mix(in srgb,var(--st) 80%,transparent);font-weight:600}
-body.sfondo .tt tr.cur td:not(:first-child){background:#161d2b!important;border-color:#33405c!important}
-body.sfondo .tt tr.arriving td:first-child{box-shadow:inset 0 0 0 max(2px, calc(var(--u,1) * 3px)) var(--red)!important}
-body.sfondo .tt tr.arriving .tt-n{color:var(--st)!important}
-body.sfondo .tt tr.arriving .tt-d b{background:var(--red);color:#fff!important}
+body.sfondo .tt tr.M{--sc:#a5d8ff}
+body.sfondo .tt tr.P{--sc:#4dabf7}
+body.sfondo .tt tr.N{--sc:#3b6ef5}
+body.sfondo .tt tr.arriving{--sc:var(--red)}
+body.sfondo .tt td{--bw:max(1.5px, calc(var(--u,1) * 1.5px));background:transparent!important;box-shadow:none!important;
+  border-top:var(--bw) solid var(--sc)!important;border-bottom:var(--bw) solid var(--sc)!important}
+body.sfondo .tt td:first-child{border-left:var(--bw) solid var(--sc)!important;border-radius:calc(var(--u,1) * 9px) 0 0 calc(var(--u,1) * 9px)}
+body.sfondo .tt td:last-child{border-right:var(--bw) solid var(--sc)!important;border-radius:0 calc(var(--u,1) * 9px) calc(var(--u,1) * 9px) 0}
+body.sfondo .tt tr.cur td{--bw:max(2.5px, calc(var(--u,1) * 2.5px));background:#0b1018!important}
+body.sfondo .tt-n{color:var(--sc)!important;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+body.sfondo .tt-d{color:var(--tx3);font-weight:700}
+body.sfondo .tt-d b{display:inline-block;margin-left:.35em;padding:.08em .45em;border-radius:.3em;background:var(--sc);color:#04080f!important;font-weight:800;letter-spacing:.06em}
+body.sfondo .tt tr.arriving .tt-d b{color:#fff!important}
+body.sfondo .tt-o{color:var(--tx3);font-weight:600}
 body.sfondo .tt .p{font-weight:700;flex-wrap:wrap;row-gap:0}
 body.sfondo .tt .p span{flex:0 0 auto;max-width:100%}   /* se non c'è spazio è l'etichetta ad andare a capo, il nome resta grande */
 /* fasce di reperibilità del turno in corso (fino alle 13:00) */
