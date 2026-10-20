@@ -229,6 +229,12 @@ body.show-tools #gear{opacity:1;pointer-events:auto}
 body.sfondo.cambio .wt{display:inline-flex;align-self:center;width:.42em;height:.42em;margin-left:.22em;transform:translateY(-.02em)}
 .wt svg{width:100%;height:100%;display:block}
 body.sfondo #alert{display:none!important}
+/* scritta rossa accanto al triangolo (solo sfondo/finestra) */
+.wtx{display:none}
+body.sfondo.cambio .wtx{display:block;align-self:center;color:var(--red);font-weight:700;line-height:1.2;font-size:calc(var(--u,1) * 15px);margin-left:calc(var(--u,1) * -6px)}
+body.sfondo.cambio .wtx b{font-weight:800;white-space:nowrap}
+body.sfondo.cambio .wtx{white-space:nowrap}
+body.sf2 .clock-col .date{white-space:nowrap}
 /* ── Modalità sfondo desktop: pannello solo a destra, il resto nero pieno per le icone ── */
 body.sfondo{background:#000!important;padding:0;display:block;--area-w:42vw;--area-h:100vh;--hair:#1f2532;--hair2:#151a24}
 body.sfondo.area-quarto{--area-w:50vw;--area-h:50vh}
@@ -463,6 +469,7 @@ body.sfondo.area-quarto .tt .p{font-size:min(1.4cqw,2.5cqh)}
 <main>
   <section class="clock-col">
     <div class="dclock" id="dclock"><span id="dh">--</span><span class="sep">:</span><span id="dm">--</span><span class="sec" id="ds">--</span><span class="wt" id="wt" aria-label="Cambio turno vicino"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6 1.4 21h21.2L12 2.6Z" fill="var(--red)"/><path d="M12 9.2v5.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.7" r="1.35" fill="#fff"/></svg></span></div>
+    <div class="wtx" id="wtx"></div>
     <div class="aclock"><svg viewBox="0 0 200 200" id="clock-svg" aria-hidden="true"></svg></div>
     <div class="adigital" id="adigital"></div>
     <div class="date" id="date"></div>
@@ -1119,6 +1126,8 @@ function renderAlert(now){
   const on = soon && (VIEW.alert || a.test);
   el.classList.toggle('on', !!on);
   document.body.classList.toggle('cambio', !!on);
+  const wtx = document.getElementById('wtx');
+  if(wtx) wtx.innerHTML = on ? `Valutare la chiamata dei reperibili:<br>cambio turno tra <b>${Math.max(1, Math.ceil(ms / 60000))} min</b>` : '';
   if(!on) return;
   const sec = Math.ceil(ms / 1000), mm = Math.floor(sec / 60), ss = sec % 60;
   const hm = String(a.dt.getHours()).padStart(2,'0') + ':' + String(a.dt.getMinutes()).padStart(2,'0');
