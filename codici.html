@@ -104,13 +104,15 @@ textarea.nt:focus{outline:2px solid var(--tx3);outline-offset:-1px;background:va
   body{background:#fff!important;color:#000;padding:0;min-height:0}
   .wrap,.bar{display:none!important}
   #print{display:block;font-family:Calibri,'Segoe UI',Arial,sans-serif;color:#000}
-  .pt{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4mm;font-size:10pt;color:#444}
+  .pt{display:flex;justify-content:space-between;align-items:baseline;margin:0 auto 4mm;font-size:10pt;color:#444;width:max-content;gap:12mm}
   .pt b{font-size:13pt;color:#000}
-  .pg{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:start;border:1px solid #000}
-  table.pl{width:100%;border-collapse:collapse;font-size:13pt}
+  /* tabelle larghe quanto i nomi: il codice sta subito accanto al nome */
+  .pg{display:grid;grid-template-columns:max-content max-content;gap:0;align-items:start;border:1px solid #000;width:max-content;margin:0 auto}
+  table.pl{width:auto;border-collapse:collapse;font-size:13pt}
+  table.pl td:first-child{white-space:nowrap;padding-right:3mm}
   table.pl th{font-weight:700;font-size:13.5pt;text-align:center;padding:1.6mm 2mm;border-bottom:1px solid #000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   table.pl td{padding:1.1mm 2.2mm;border-bottom:1px solid #9a9a9a;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  table.pl td.c{text-align:center;width:16mm;border-left:1px solid #9a9a9a}
+  table.pl td.c{text-align:center;min-width:11mm;border-left:1px solid #9a9a9a;white-space:nowrap}
   table.pl.a th{background:#bdd7ee} table.pl.a tr:nth-child(even) td{background:#ddebf7}
   table.pl.i th{background:#57d16f} table.pl.i tr:nth-child(even) td{background:#c6efce}
   table.pl.i{border-left:1px solid #000}
