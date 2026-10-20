@@ -292,6 +292,8 @@ body.sfondo:not(.area-quarto) .data-col{gap:calc(var(--u) * 14px)}
 body.sfondo:not(.area-quarto) .kicker{font-size:calc(var(--u) * 11px)}
 body.sfondo:not(.area-quarto) .reps{gap:calc(var(--u) * 8px);margin-top:calc(var(--u) * 7px);display:grid;width:max-content;max-width:100%}
 /* i due riquadri finiscono poco dopo il nome più lungo e sono sempre larghi uguale */
+/* reperibili allineati a destra (titolo compreso): lo spazio libero resta verso le icone */
+body.sfondo:not(.area-quarto) .reps-wrap{display:flex;flex-direction:column;align-items:flex-end}
 body.sfondo:not(.area-quarto) .rep{grid-template-columns:calc(var(--u) * 100px) minmax(0,1fr);gap:calc(var(--u) * 12px);padding:calc(var(--u) * 9px) calc(var(--u) * 30px) calc(var(--u) * 9px) calc(var(--u) * 16px);border-radius:calc(var(--u) * 10px);border-width:max(2px, calc(var(--u) * 2px))}
 body.sfondo:not(.area-quarto) .rep-l{font-size:calc(var(--u) * 13px)}
 body.sfondo:not(.area-quarto) .rep-n{font-size:calc(var(--u) * 34px)!important}
