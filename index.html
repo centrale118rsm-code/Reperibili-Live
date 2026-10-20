@@ -334,6 +334,45 @@ body.sfondo.rub:not(.area-quarto) #rubsf{display:block;flex:0 0 auto;border:1px 
   padding:calc(var(--u) * 9px) calc(var(--u) * 16px) calc(var(--u) * 11px);font-size:max(14px, calc(var(--u) * 15px))}
 /* sfondo e finestra: nero pieno anche su schermi/finestre verticali (dove valgono le regole per telefono) */
 html.nero, html.nero body{background:#000!important;height:100%!important;overflow:hidden!important}
+/* ── LAYOUT A DUE COLONNE (bozza): a sinistra ora, reperibili, fasce, turni, spazio icone; a destra i codici ── */
+.fasce-wrap,.icon-space{display:none}
+body.sf2 main{display:flex!important;flex-direction:row!important;gap:calc(var(--u) * 24px)!important;justify-content:flex-start!important;bottom:calc(var(--tb, 48px) + 1.4vh)!important}
+body.sf2 .lcol{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:calc(var(--u) * 16px);overflow:hidden}
+body.sf2 .rcol{flex:0 0 auto;min-height:0;display:flex;flex-direction:column;padding-bottom:var(--info-space, 1.6vh);overflow:hidden}
+body.sf2 .clock-col{justify-content:flex-start;align-items:flex-end}
+body.sf2 .data-col{gap:calc(var(--u) * 16px)}
+/* senza note: reperibili a tutta larghezza, titolo al centro; con una nota: reperibili a sinistra e riquadro note a destra */
+body.sf2 .reps-row{flex-direction:row;gap:calc(var(--u) * 14px)}
+body.sf2 .reps-row .reps-col{flex:1 1 auto;align-items:stretch}
+body.sf2 .reps-row .reps-col .kicker{align-self:center}
+body.sf2 .reps{width:auto!important}
+body.sf2.sfondo .reps-row.has-note{justify-content:flex-start}
+body.sf2.sfondo .reps-row.has-note .reps-col{flex:0 0 auto;align-items:flex-start}
+body.sf2.sfondo .reps-row.has-note .reps-col .kicker{align-self:flex-start}
+body.sf2.sfondo .reps-row.has-note .reps{width:max-content!important}
+body.sf2.sfondo .reps-row.has-note .note-col{flex:1 1 0;min-width:calc(var(--u) * 150px)}
+body.sf2 .fasce-wrap{display:block}
+body.sf2 .icon-space{display:flex;flex:0 0 auto;height:128px;margin-top:auto;gap:28px;align-items:flex-end;padding-left:4px}
+body.sf2 #rubsf{border:0!important;padding:0!important;font-size:max(13px, calc(var(--u) * 15px))!important}
+.rbs.vert{display:flex;flex-direction:column;gap:calc(var(--u) * 14px)}
+.rbs.vert .rbs-col{gap:calc(var(--u) * 2px)}
+.rbs.vert .vsplit{display:flex;gap:calc(var(--u) * 18px)}
+body.sf2 .rcol{clip-path:inset(0 0 var(--info-space, 0px) 0)}
+/* fasce di reperibilità del turno in corso (fino alle 13:00) */
+.fs{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--hair);border-radius:calc(var(--u) * 9px);overflow:hidden;table-layout:fixed;margin-top:calc(var(--u) * 7px)}
+.fs th{font-size:calc(var(--u) * 10px);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);text-align:left;padding:calc(var(--u) * 6px) calc(var(--u) * 12px);border-bottom:1px solid var(--hair)}
+.fs td{padding:calc(var(--u) * 6px) calc(var(--u) * 12px);border-bottom:1px solid var(--hair2);font-size:calc(var(--u) * 16px);font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs tr:last-child td{border-bottom:0}
+.fs td.t{font-size:calc(var(--u) * 13px);font-weight:600;color:var(--tx2);text-transform:none;font-variant-numeric:tabular-nums}
+.fs td.t small{color:var(--tx3);font-weight:500;margin-left:.4em}
+.fs tr.past td{opacity:.32}
+.fs tr.fcur td{background:rgba(255,255,255,.045)}
+.fs tr.fcur td.t{color:var(--tx);box-shadow:inset max(3px, calc(var(--u) * 3px)) 0 0 var(--red)}
+.fs .ced{color:#fbbf24}
+.fs .ced small{font-size:.62em;font-weight:600;color:var(--tx3);text-transform:none;margin-left:.45em}
+/* icone dei turni: sullo sfondo lo spazio resta libero (ci vanno le icone vere del desktop); nella finestra sono link */
+.icon-space a{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--tx);text-decoration:none;font-size:13px;font-weight:600;text-align:center;width:84px}
+.icon-space img{width:56px;height:56px;border-radius:12px}
 /* finestra senza bordi: la colonna occupa tutta la finestra */
 body.finestra{--tb:0px;--info-space:2.4vh}
 body.finestra:not(.area-quarto){--area-w:calc(100vw - 4.4vw);--col-r:2.2vw}
@@ -412,6 +451,7 @@ body.sfondo.area-quarto .tt .p{font-size:min(1.4cqw,2.5cqh)}
         <div class="note-col" id="note-col"></div>
       </div>
     </div>
+    <div class="fasce-wrap" id="fasce-wrap"></div>
     <div class="shifts-wrap">
       <div class="kicker"><span>Prossimi turni</span></div>
       <div class="blocks" id="blocks"></div>
@@ -419,6 +459,7 @@ body.sfondo.area-quarto .tt .p{font-size:min(1.4cqw,2.5cqh)}
   </section>
   <aside class="rub-col"><div id="rubrica"></div></aside>
   <div id="rubsf"></div>
+  <div class="icon-space" id="icon-space"></div>
 </main>
 
 <button id="gear" onclick="openPanel()" aria-label="Impostazioni"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
@@ -1075,6 +1116,30 @@ function fitPanel(){
   const main = document.querySelector('main'), body = document.body, info = document.getElementById('pcinfo');
   if(!main || !main.clientHeight) return;
   if(info && info.classList.contains('on')) body.style.setProperty('--info-space', (info.offsetHeight + Math.round(innerHeight * .03)) + 'px');
+  if(body.classList.contains('sf2')){
+    const l = main.querySelector('.lcol'), r = main.querySelector('.rcol'), rb = document.getElementById('rubsf');
+    RUB_VSPLIT = false; renderRubrica();
+    const best = (ok, lo, hi) => { if(ok(lo)){ for(let k = 0; k < 13; k++){ const mid = (lo + hi) / 2; if(ok(mid)) lo = mid; else hi = mid; } } ok(lo); return lo; };
+    // prima la colonna dei codici (scala propria, almeno 13 px), poi la colonna di sinistra riempie lo spazio che resta
+    body.style.setProperty('--u', '.6');
+    // colonna dei codici: deve stare in altezza e non superare una certa larghezza (la sinistra resta leggibile)
+    const okR = u => { rb.style.setProperty('--u', u.toFixed(3)); return r.scrollHeight <= r.clientHeight + 1 && rb.scrollWidth <= r.clientWidth + 1; };
+    const prova = (split, frac, area) => {
+      if(area) body.style.setProperty('--area-w', area); else body.style.removeProperty('--area-w');
+      RUB_VSPLIT = split; renderRubrica(); r.style.maxWidth = (frac * 100) + '%';
+      const u = best(okR, 13 / 15, 1.15); return okR(u) ? u : -1;
+    };
+    if(rb){
+      // pannello più largo solo se serve: la colonna dei codici deve starci e quella di sinistra restare comoda (almeno 470 px)
+      const aree = [null, 'min(62vw, 1000px)', 'min(72vw, 1100px)'], tentativi = [];
+      aree.forEach(a => { tentativi.push([false, .40, a], [true, .50, a]); });
+      let fatto = false;
+      for(const t of tentativi){ if(prova(...t) > 0 && l.clientWidth >= 470){ fatto = true; break; } }
+      if(!fatto) prova(...tentativi[tentativi.length - 1]);
+    }
+    best(u => { body.style.setProperty('--u', u.toFixed(3)); return l.scrollHeight <= l.clientHeight + 1 && l.scrollWidth <= l.clientWidth + 1 && main.scrollWidth <= main.clientWidth + 1; }, .4, 2.4);
+    return;
+  }
   const rb = () => document.getElementById('rubsf');
   const fits = u => {
     body.style.setProperty('--u', u.toFixed(3));
@@ -1254,7 +1319,8 @@ function rubFind(kind, shiftName){
   const list = RUBRICA[kind === 'aut' ? 'autisti' : 'infermieri'] || [];
   return list.find(e => rubNorm(e.nome) === key) || list.find(e => rubNorm(e.nome).startsWith(key + ' ')) || list.find(e => rubNorm(e.nome).split(' ')[0] === key.split(' ')[0]) || null;
 }
-let RUB_COLS = { a:1, i:2 };   // colonne della lista codici sullo sfondo (scelte da fitPanel)
+let RUB_COLS = { a:1, i:2 };
+let RUB_VSPLIT = false;        // schermi bassi: infermieri su due colonne nella colonna dei codici   // colonne della lista codici sullo sfondo (scelte da fitPanel)
 function renderRubrica(){
   const el = document.getElementById('rubrica'); if(!el) return;
   const sec = (kind, title, list) => {
@@ -1269,6 +1335,12 @@ function renderRubrica(){
     const row = e => `<div class="rb-r"><span class="rb-c">${esc(e.codice)}</span><span class="rb-n">${esc(e.nome)}</span></div>`;
     const col = (cls, title, list) => `<div class="rbs-col ${cls}"><div class="rb-h${title ? '' : ' blank'}">${title || '&nbsp;'}</div>${list.map(row).join('')}</div>`;
     const box = document.getElementById('rubsf');
+    if(document.body.classList.contains('sf2')){
+      const h = Math.ceil(I.length / 2);
+      const inf = RUB_VSPLIT ? `<div class="vsplit">${col('inf', 'Infermieri', I.slice(0, h))}${col('inf', '', I.slice(h))}</div>` : col('inf', 'Infermieri', I);
+      if(box) box.innerHTML = `<div class="rbs vert">${col('aut', 'Autisti', A)}${inf}</div>`;
+      return;
+    }
     const cols = split(A, RUB_COLS.a).map((l, x) => col('aut', x ? '' : 'Autisti', l)).concat(split(I, RUB_COLS.i).map((l, x) => col('inf', x ? '' : 'Infermieri', l)));
     if(box) box.innerHTML = `<div class="rbs" style="grid-template-columns:repeat(${cols.length},max-content)">${cols.join('')}</div>`;
     return;
@@ -1363,6 +1435,7 @@ function renderAll(){
   try { renderRep(document.getElementById('rep-aut'), 'aut', now); } catch(e){ console.error('rep autisti', e); }
   try { renderRep(document.getElementById('rep-inf'), 'inf', now); } catch(e){ console.error('rep infermieri', e); }
   try { renderNotes(now); } catch(e){ console.error('note', e); }
+  try { renderFasce(now); } catch(e){ console.error('fasce', e); }
   try { renderBlocks(now); } catch(e){ console.error('turni', e); }
   try { renderRubrica(); } catch(e){ console.error('rubrica', e); }
   try { fitTexts(); } catch(e) {}
@@ -1662,10 +1735,49 @@ function boot(){
   window.addEventListener('resize', () => { clearTimeout(window.__fitT); window.__fitT = setTimeout(() => fitTexts(), 200); });
   setTimeout(() => { if(!bootDone){ bootDone = true; document.getElementById('boot').classList.add('gone'); } }, 12000);
 }
+// Sfondo/finestra (metà destra): due colonne come la bozza
+function buildLayout2(){
+  if(document.body.classList.contains('area-quarto') || document.querySelector('main .lcol')) return;
+  const main = document.querySelector('main'); if(!main) return;
+  const l = document.createElement('div'); l.className = 'lcol';
+  const r = document.createElement('div'); r.className = 'rcol';
+  l.append(main.querySelector('.clock-col'), main.querySelector('.data-col'), document.getElementById('icon-space'));
+  r.append(document.getElementById('rubsf'));
+  main.prepend(l); main.append(r);
+  document.body.classList.add('sf2');
+  if(FINESTRA){
+    const ic = 'turni-118.png';
+    document.getElementById('icon-space').innerHTML =
+      `<a href="https://centrale118rsm-code.github.io/Turni-Autisti-2026-Rsm/" target="_blank" rel="noopener"><img src="${ic}" alt="">Turni Autisti</a>` +
+      `<a href="https://centrale118rsm-code.github.io/Turni-Infermieri-2026/" target="_blank" rel="noopener"><img src="${ic}" alt="">Turni Infermieri</a>`;
+  }
+}
+// Fasce del turno di reperibilità in corso (dalle 13:00 alle 13:00 del giorno dopo), autista e infermiere
+function renderFasce(now){
+  const el = document.getElementById('fasce-wrap'); if(!el || !SFONDO) return;
+  const today = ymd(now), slot = slotOfHour(now.getHours());
+  const start = now.getHours() >= 13 ? today : addDays(today, -1), next = addDays(start, 1);
+  const cells = [[start, 2], [start, 3], [next, 0], [next, 1]];
+  const who = (R, disp, d, sl) => {
+    const w = (R.days[d] || [])[sl] || '', t = titolareOf(R, d, sl);
+    if(!w) return '<span style="color:var(--tx3)">—</span>';
+    return w !== t && t ? `<span class="ced">${esc(disp(w))}<small>al posto di ${esc(disp(t))}</small></span>` : esc(disp(w));
+  };
+  const rows = cells.map(([d, sl]) => {
+    const past = d < today || (d === today && sl < slot), cur = d === today && sl === slot;
+    const lbl = SLOT_T[sl][0] + ' – ' + SLOT_T[sl][1];
+    return `<tr class="${past ? 'past' : ''}${cur ? ' fcur' : ''}"><td class="t">${lbl}${d !== start ? '<small>' + esc(dayLabel(d, today).toLowerCase()) + '</small>' : ''}</td>
+      <td>${who(autRep, n => n, d, sl)}</td><td>${who(infRep, infDisplay, d, sl)}</td></tr>`;
+  }).join('');
+  const fine = dayLabel(next, today).toLowerCase();
+  el.innerHTML = `<div class="kicker"><span>Fasce di reperibilità</span><span class="pill">fino alle 13:00${fine === 'oggi' ? '' : ' di ' + fine}</span></div>
+    <table class="fs"><colgroup><col style="width:30%"><col style="width:33%"><col style="width:37%"></colgroup>
+    <thead><tr><th>Fascia</th><th>Autista</th><th>Infermiere</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
 function bootFinestra(){
   document.documentElement.classList.add('nero');
   document.body.classList.add('sfondo', 'finestra');
-  bootDone = true; document.getElementById('boot').classList.add('gone');
+  bootDone = true; loadView(); buildLayout2(); document.getElementById('boot').classList.add('gone');
   loadView(); rubLoadLocal(); loadCache(); applyView();
   startClock();
   loadAutXlsx();
@@ -1678,6 +1790,7 @@ function bootFinestra(){
 function bootSfondo(){
   document.documentElement.classList.add('nero');
   document.body.classList.add('sfondo');
+  loadView(); buildLayout2();
   renderPcInfo();
   bootDone = true; document.getElementById('boot').classList.add('gone');
   loadView(); rubLoadLocal(); loadCache(); applyView();
