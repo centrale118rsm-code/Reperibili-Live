@@ -298,12 +298,12 @@ body.sfondo:not(.area-quarto) main{top:2.6vh;right:var(--col-r);bottom:calc(var(
 body.sfondo.has-info:not(.area-quarto){--info-space:11vh}
 body.sfondo:not(.area-quarto) #pcinfo.on{right:var(--col-r)}
 body.sfondo:not(.area-quarto) .clock-col{padding-bottom:calc(var(--u) * 8px);gap:calc(var(--u) * 16px)}
-body.sfondo:not(.area-quarto) .dclock{font-size:calc(var(--u) * 58px)}
-body.sfondo:not(.area-quarto) .date{font-size:calc(var(--u) * 15px);margin:0 0 calc(var(--u) * 6px)}
+body.sfondo:not(.area-quarto) .dclock{font-size:calc(var(--u) * 54px)}
+body.sfondo:not(.area-quarto) .date{font-size:calc(var(--u) * 17px);margin:0 0 calc(var(--u) * 6px)}
 body.sfondo:not(.area-quarto) .aclock{width:calc(var(--u) * 110px)}
 body.sfondo:not(.area-quarto) .adigital{font-size:calc(var(--u) * 40px)}
 body.sfondo:not(.area-quarto) .data-col{gap:calc(var(--u) * 14px)}
-body.sfondo:not(.area-quarto) .kicker{font-size:calc(var(--u) * 11px)}
+body.sfondo:not(.area-quarto) .kicker{font-size:calc(var(--u) * 13px)}
 body.sfondo:not(.area-quarto) .reps{gap:calc(var(--u) * 8px);margin-top:calc(var(--u) * 7px);display:grid;width:max-content;max-width:100%}
 /* i due riquadri finiscono poco dopo il nome più lungo e sono sempre larghi uguale */
 /* reperibili al centro della colonna (titolo compreso) */
@@ -316,17 +316,17 @@ body.sfondo:not(.area-quarto) .note-box{margin-top:calc(var(--u) * 7px);border:m
   padding:calc(var(--u) * 12px) calc(var(--u) * 18px);gap:calc(var(--u) * 10px);background:#0b0a07;box-shadow:none;font-size:calc(var(--u) * 19px)}
 body.sfondo:not(.area-quarto) .note-it + .note-it{padding-top:calc(var(--u) * 10px);border-top-color:#2a2618}
 body.sfondo:not(.area-quarto) .rep{grid-template-columns:calc(var(--u) * 100px) minmax(0,1fr);gap:calc(var(--u) * 12px);padding:calc(var(--u) * 9px) calc(var(--u) * 30px) calc(var(--u) * 9px) calc(var(--u) * 16px);border-radius:calc(var(--u) * 10px);border-width:max(2px, calc(var(--u) * 2px))}
-body.sfondo:not(.area-quarto) .rep-l{font-size:calc(var(--u) * 13px)}
-body.sfondo:not(.area-quarto) .rep-n{font-size:calc(var(--u) * 34px)!important}
+body.sfondo:not(.area-quarto) .rep-l{font-size:calc(var(--u) * 15px)}
+body.sfondo:not(.area-quarto) .rep-n{font-size:calc(var(--u) * 33px)!important}
 
-body.sfondo:not(.area-quarto) .rep-x{font-size:calc(var(--u) * 12px)}
+body.sfondo:not(.area-quarto) .rep-x{font-size:calc(var(--u) * 14px)}
 body.sfondo:not(.area-quarto) .blocks{margin-top:calc(var(--u) * 7px)}
 body.sfondo:not(.area-quarto) .tt{border-radius:calc(var(--u) * 9px)}
-body.sfondo:not(.area-quarto) .tt th{font-size:calc(var(--u) * 10px);padding:calc(var(--u) * 6px) calc(var(--u) * 12px)}
+body.sfondo:not(.area-quarto) .tt th{font-size:calc(var(--u) * 12px);padding:calc(var(--u) * 6px) calc(var(--u) * 12px)}
 body.sfondo:not(.area-quarto) .tt td{padding:calc(var(--u) * 9px) calc(var(--u) * 13px)}
-body.sfondo:not(.area-quarto) .tt-d{font-size:calc(var(--u) * 11px)}
-body.sfondo:not(.area-quarto) .tt-n{font-size:calc(var(--u) * 19px)}
-body.sfondo:not(.area-quarto) .tt-o{font-size:calc(var(--u) * 11px)}
+body.sfondo:not(.area-quarto) .tt-d{font-size:calc(var(--u) * 13px)}
+body.sfondo:not(.area-quarto) .tt-n{font-size:calc(var(--u) * 21px)}
+body.sfondo:not(.area-quarto) .tt-o{font-size:calc(var(--u) * 13px)}
 body.sfondo:not(.area-quarto) .tt .grp{gap:calc(var(--u) * 3px)}
 body.sfondo:not(.area-quarto) .tt .p{font-size:calc(var(--u) * 19px)}
 body.sfondo:not(.area-quarto) .tt-ced{font-size:calc(var(--u) * 10px)}
@@ -353,6 +353,9 @@ body.sf2.sfondo .reps-row.has-note .reps{width:max-content!important}
 body.sf2.sfondo .reps-row.has-note .note-col{flex:1 1 0;min-width:calc(var(--u) * 150px)}
 body.sf2 .fasce-wrap{display:block}
 body.sf2 .icon-space{display:flex;flex:0 0 auto;height:128px;margin-top:auto;gap:28px;align-items:flex-end;padding-left:4px}
+/* sullo sfondo le icone vere stanno accanto al riquadro PC: le due colonne arrivano fin poco sopra quel riquadro */
+body.sf2:not(.finestra) .icon-space{display:none}
+body.sf2:not(.finestra) .lcol{padding-bottom:var(--info-space, 1.6vh)}
 body.sf2 #rubsf{border:0!important;padding:0!important;font-size:max(13px, calc(var(--u) * 15px))!important}
 .rbs.vert{display:flex;flex-direction:column;gap:calc(var(--u) * 14px)}
 .rbs.vert .rbs-col{gap:calc(var(--u) * 2px)}
@@ -377,6 +380,7 @@ body.sfondo .tt-d b{display:inline-block;margin-left:.35em;padding:.08em .45em;b
 body.sfondo .tt tr.arriving .tt-d b{color:#fff!important}
 body.sfondo .tt-o{color:var(--tx3);font-weight:600}
 body.sfondo .tt .p{font-weight:700;flex-wrap:wrap;row-gap:0}
+body.sfondo .tt .p em{font-size:.66em}
 body.sfondo .tt .p span{flex:0 0 auto;max-width:100%}   /* se non c'è spazio è l'etichetta ad andare a capo, il nome resta grande */
 /* nomi dei reperibili al centro del riquadro: a destra uno spazio vuoto largo quanto l'etichetta "Autista/Infermiere" */
 body.sf2 .rep{grid-template-columns:calc(var(--u) * 100px) minmax(0,1fr) calc(var(--u) * 100px)!important;padding-right:calc(var(--u) * 16px)!important}
@@ -386,10 +390,10 @@ body.sf2 .rep-line{justify-content:center}
 body.sf2 .rep-x{justify-content:center}
 /* fasce di reperibilità del turno in corso (fino alle 13:00) */
 .fs{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--hair);border-radius:calc(var(--u) * 9px);overflow:hidden;table-layout:fixed;margin-top:calc(var(--u) * 7px)}
-.fs th{font-size:calc(var(--u) * 10px);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);text-align:left;padding:calc(var(--u) * 6px) calc(var(--u) * 12px);border-bottom:1px solid var(--hair)}
-.fs td{padding:calc(var(--u) * 6px) calc(var(--u) * 12px);border-bottom:1px solid var(--hair2);font-size:calc(var(--u) * 16px);font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs th{font-size:calc(var(--u) * 12px);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);text-align:left;padding:calc(var(--u) * 6px) calc(var(--u) * 12px);border-bottom:1px solid var(--hair)}
+.fs td{padding:calc(var(--u) * 6px) calc(var(--u) * 12px);border-bottom:1px solid var(--hair2);font-size:calc(var(--u) * 18px);font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fs tr:last-child td{border-bottom:0}
-.fs td.t{font-size:calc(var(--u) * 13px);font-weight:600;color:var(--tx2);text-transform:none;font-variant-numeric:tabular-nums}
+.fs td.t{font-size:calc(var(--u) * 15px);font-weight:600;color:var(--tx2);text-transform:none;font-variant-numeric:tabular-nums}
 .fs td.t small{color:var(--tx3);font-weight:500;margin-left:.4em}
 .fs tr.past td{opacity:.32}
 .fs tr.fcur td{background:rgba(255,255,255,.045)}
@@ -1141,7 +1145,7 @@ function fitPanel(){
   if(!SFONDO || document.body.classList.contains('area-quarto')) return;
   const main = document.querySelector('main'), body = document.body, info = document.getElementById('pcinfo');
   if(!main || !main.clientHeight) return;
-  if(info && info.classList.contains('on')) body.style.setProperty('--info-space', (info.offsetHeight + Math.round(innerHeight * .03)) + 'px');
+  if(info && info.classList.contains('on')) body.style.setProperty('--info-space', (info.offsetHeight + Math.round(innerHeight * .02)) + 'px');
   if(body.classList.contains('sf2')){
     const l = main.querySelector('.lcol'), r = main.querySelector('.rcol'), rb = document.getElementById('rubsf');
     RUB_VSPLIT = false; renderRubrica();
@@ -1153,7 +1157,7 @@ function fitPanel(){
     const prova = (split, frac, area) => {
       if(area) body.style.setProperty('--area-w', area); else body.style.removeProperty('--area-w');
       RUB_VSPLIT = split; renderRubrica(); r.style.maxWidth = (frac * 100) + '%';
-      const u = best(okR, 13 / 15, 1.15); return okR(u) ? u : -1;
+      const u = best(okR, 13 / 15, 1.7); return okR(u) ? u : -1;
     };
     if(rb){
       // pannello più largo solo se serve: la colonna dei codici deve starci e quella di sinistra restare comoda (almeno 470 px)
