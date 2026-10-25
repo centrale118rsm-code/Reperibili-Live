@@ -1711,7 +1711,9 @@ async function restToken(cfg, force){
 async function restFetch(cfg, path, extra){
   const url = `https://firestore.googleapis.com/v1/projects/${cfg.projectId}/databases/(default)/documents/` + path.split('/').map(encodeURIComponent).join('/') + '?key=' + cfg.apiKey + (extra || '');
   const go = tok => fetch(url, { cache:'no-store', headers: tok ? { Authorization: 'Bearer ' + tok } : {} });
-  const had = REST_TOK[cfg.projectId] || null;
+  // il gettone salvato si usa subito: una richiesta senza gettone che viene rifiutata costa comunque una lettura
+  let had = REST_TOK[cfg.projectId] || null;
+  if(!had){ try { const t = JSON.parse(localStorage.getItem('monitor118_tok_' + cfg.projectId) || 'null'); if(t && t.exp > Date.now() + 60000) had = REST_TOK[cfg.projectId] = t.id; } catch(e) {} }
   let r = await go(had);
   if(r.status === 401 || r.status === 403){ const tok = await restToken(cfg, !!had); if(tok) r = await go(tok); }
   return r;
@@ -1734,11 +1736,34 @@ async function restList(cfg, path){
   }
   return out;
 }
-async function restLoadOnce(){
-  const A = FB_AUT, I = FB_INF, safe = p => p.catch(e => { console.warn(e); return null; });
+// Lo sfondo rifà la "foto" ogni minuto aprendo la pagina da capo: senza memoria ogni foto rileggeva
+// tutti i documenti da Firebase (circa 20 letture al minuto per PC, quasi 30.000 al giorno).
+// Ora i documenti letti restano nella memoria del browser (stesso profilo di Edge a ogni foto)
+// e si richiedono a Firebase solo quando sono più vecchi di REST_FRESCO minuti.
+const REST_FRESCO = { svelto: 5, lento: 15 };   // minuti: cessioni/cambi turno | impostazioni, rubrica, note
+const REST_MEM_KEY = 'monitor118_rest';
+function restMemLoad(){ try { return JSON.parse(localStorage.getItem(REST_MEM_KEY) || '{}') || {}; } catch(e) { return {}; } }
+function restMemSave(m){ const vecchio = Date.now() - 2 * 86400000; Object.keys(m).forEach(k => { if(!m[k] || !(m[k].t > vecchio)) delete m[k]; }); try { localStorage.setItem(REST_MEM_KEY, JSON.stringify(m)); } catch(e) {} }
+// fn = restDoc | restList; opzionale = se Firebase rifiuta (es. permessi) vale null e si riprova al giro "lento"
+async function restCached(fn, cfg, path, minuti, opzionale){
+  const key = cfg.projectId + '/' + path + (fn === restList ? '/*' : ''), now = Date.now();
+  const mem = restMemLoad(), c = mem[key];
+  if(c && now - c.t >= 0 && now - c.t < minuti * 60000) return c.v;
   try {
-    const [ov, man, bib, sw, cop, rub, nt] = await Promise.all([restList(A,'reperibilita_overrides'), restDoc(A,'admin_config/reperibilita_manuale'), restDoc(A,'admin_config/bibbia'),
-      restList(A,'turno_overrides'), safe(restList(A,'reperibilita_coperture')), safe(restDoc(A,'admin_config/monitor_rubrica')), safe(restDoc(A,'admin_config/monitor_note'))]);
+    const v = await fn(cfg, path);
+    const m2 = restMemLoad(); m2[key] = { t: now, v }; restMemSave(m2);
+    return v;
+  } catch(e){
+    if(c) { console.warn('Firebase non raggiungibile, uso la copia salvata di ' + path, e); return c.v; }
+    if(opzionale){ console.warn(e); const m2 = restMemLoad(); m2[key] = { t: now, v: null }; restMemSave(m2); return null; }
+    throw e;
+  }
+}
+async function restLoadOnce(){
+  const A = FB_AUT, I = FB_INF, S = REST_FRESCO.svelto, L = REST_FRESCO.lento;
+  try {
+    const [ov, man, bib, sw, cop, rub, nt] = await Promise.all([restCached(restList, A, 'reperibilita_overrides', S), restCached(restDoc, A, 'admin_config/reperibilita_manuale', S), restCached(restDoc, A, 'admin_config/bibbia', L),
+      restCached(restList, A, 'turno_overrides', S), restCached(restList, A, 'reperibilita_coperture', L, true), restCached(restDoc, A, 'admin_config/monitor_rubrica', L, true), restCached(restDoc, A, 'admin_config/monitor_note', L, true)]);
     applyNote(nt || {});
     applyAutOverrides(ov.map(x => x.data)); applyAutManual(man); applyAutBibbia(bib); applyAutSwaps(sw.map(x => x.data));
     if(cop) applyAutCoperture(cop); if(rub) applyRubrica(rub);
@@ -1746,14 +1771,14 @@ async function restLoadOnce(){
   } catch(e){ console.error('Autisti (REST):', e); setStatus('autFb','err', e.message); }
   try {
     INF_NS = await detectInfNs();
-    infSettings = (await restDoc(I, 'infermieri26_config/' + INF_NS + 'settings')) || {};
+    infSettings = (await restCached(restDoc, I, 'infermieri26_config/' + INF_NS + 'settings', L)) || {};
     setStatus('infCfg','ok');
-    try { applyInfRepDoc(await restDoc(I, 'infermieri26_config/reperibilita')); setStatus('infRep','ok'); }
+    try { applyInfRepDoc(await restCached(restDoc, I, 'infermieri26_config/reperibilita', S)); setStatus('infRep','ok'); }
     catch(e){ console.error('Reperibilità infermieri (REST):', e); setStatus('infRep','err', e.message); }
     if(infMode() === 'excel') await loadInfXlsx();
     else {
       infMonthDocs = {};
-      for(const m of infMonthList()) applyInfMonth(m.id, m.y, await restDoc(I, 'infermieri26_config/' + INF_NS + m.id));
+      for(const m of infMonthList()) applyInfMonth(m.id, m.y, await restCached(restDoc, I, 'infermieri26_config/' + INF_NS + m.id, S));
       setStatus('infData','ok');
     }
     buildInfRep();
