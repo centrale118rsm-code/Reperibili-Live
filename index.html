@@ -1100,19 +1100,15 @@ function arrivalFor(now){
   if(!arrivalCache || arrivalCache.dt <= now) arrivalCache = nextArrival(now);
   return arrivalCache;
 }
-// Cambio del reperibile (fine fascia con persona diversa: alle 13:00 o quando inizia/finisce una fascia ceduta).
-// Se mancano meno minuti di quelli che il reperibile ha per arrivare, chiamarlo non ha senso.
-let REP_SOON = { aut:null, inf:null };
-function repChangeSoon(kind, now, limMin){
-  const R = kind === 'aut' ? autRep : infRep, disp = kind === 'aut' ? (n => n) : infDisplay;
-  const today = ymd(now), s = slotOfHour(now.getHours());
-  const bounds = [['07:00', today, 1], ['13:00', today, 2], ['20:00', today, 3], ['00:00', addDays(today, 1), 0]];
-  const [hm, nd, ns] = bounds[s];
-  const at = atTime(nd, hm), ms = at - now;
+// Cambio della reperibilità delle 13:00 (inizia il nuovo turno di 24 ore): vale per autista e infermiere insieme.
+// Le cessioni di singole fasce NON contano: i due riquadri si colorano sempre insieme.
+let REP_SOON = null;
+function repTurnChangeSoon(now, limMin){
+  if(slotOfHour(now.getHours()) !== 1) return null;                 // solo nella fascia 07–13
+  const today = ymd(now), at = atTime(today, '13:00'), ms = at - now;
   if(ms <= 0 || ms > limMin * 60000) return null;
-  const cur = (R.days[today] || [])[s] || '', next = (R.days[nd] || [])[ns] || '';
-  if(!cur || !next || cur === next) return null;
-  return { at, ms, hm, next: disp(next) };
+  const a = (autRep.days[today] || [])[2] || '', i = (infRep.days[today] || [])[2] || '';
+  return { at, ms, hm:'13:00', aut: a, inf: i ? infDisplay(i) : '' };
 }
 function renderAlert(now){
   const el = document.getElementById('alert');
@@ -1121,10 +1117,12 @@ function renderAlert(now){
   const ms = a ? a.dt - now : Infinity;
   const soon = !!a && ms > 0 && ms <= lim * 60000;
   currentArrival = soon ? a : null;
-  REP_SOON = { aut: repChangeSoon('aut', now, lim), inf: repChangeSoon('inf', now, lim) };
-  const rc = REP_SOON.aut || REP_SOON.inf;
-  // bordo dei reperibili: rosso se arrivano i turnisti o se quel reperibile sta per finire la reperibilità, altrimenti verde
-  [['rep-aut','aut'],['rep-inf','inf']].forEach(([id, k]) => { const r = document.getElementById(id); if(r){ const red = soon || !!REP_SOON[k]; r.classList.toggle('soon', red); r.classList.toggle('safe', !red); } });
+  REP_SOON = repTurnChangeSoon(now, lim);
+  const rc = REP_SOON;
+  // bordo dei reperibili: autista e infermiere sempre insieme — rosso se il cambio (06:30, 12:45, 19:45)
+  // arriva entro la soglia o se alle 13:00 cambia la reperibilità, altrimenti verde
+  const red = soon || !!rc;
+  ['rep-aut','rep-inf'].forEach(id => { const r = document.getElementById(id); if(r){ r.classList.toggle('soon', red); r.classList.toggle('safe', !red); } });
   const on = (soon || !!rc) && (VIEW.alert || (a && a.test));
   el.classList.toggle('on', !!on);
   document.body.classList.toggle('cambio', !!on);
@@ -1134,7 +1132,7 @@ function renderAlert(now){
     : `Valutare la chiamata dei reperibili:<br>alle ${rc.hm} cambia il reperibile (tra <b>${Math.max(1, Math.ceil(rc.ms / 60000))} min</b>)`;
   if(!on) return;
   if(!soon){
-    const chi = [REP_SOON.aut ? `<strong>Autista:</strong> ${esc(REP_SOON.aut.next)}` : '', REP_SOON.inf ? `<strong>Infermiere:</strong> ${esc(REP_SOON.inf.next)}` : ''].filter(Boolean).join(' · ');
+    const chi = [rc.aut ? `<strong>Autista:</strong> ${esc(rc.aut)}` : '', rc.inf ? `<strong>Infermiere:</strong> ${esc(rc.inf)}` : ''].filter(Boolean).join(' · ') || 'il nuovo turno';
     document.getElementById('al-t').innerHTML = `Cambio reperibile tra <b>${Math.max(1, Math.ceil(rc.ms / 60000))} min</b>`;
     document.getElementById('al-s').innerHTML = `Alle <strong>${rc.hm}</strong> la reperibilità passa a ${chi}.<br>I reperibili hanno ${esc(VIEW.alertMin)} minuti per arrivare: valuta prima di chiamarli.`;
     return;
@@ -1257,7 +1255,7 @@ function renderRep(el, kind, now){
   else if(base && tit && base !== tit) extra.push(`<span>al posto di ${esc(disp(tit))}</span>`);
   if(next && (!cop || next.id !== cop.id)) extra.push(`<span class="cop-next">Copertura ${next.from}–${next.to}: ${esc(disp(next.sostituto))}</span>`);
   el.classList.toggle('cov', !!cop);
-  const red = !!currentArrival || !!REP_SOON[kind];
+  const red = !!currentArrival || !!REP_SOON;   // uguale per autista e infermiere
   el.classList.toggle('soon', red); el.classList.toggle('safe', !red);
   el.innerHTML = `<div class="rep-l">${kind === 'aut' ? 'Autista' : 'Infermiere'}</div>
     <div class="rep-body"><div class="rep-line"><div class="rep-n${who ? '' : ' none'}">${who ? esc(disp(who)) : (loaded ? 'Nessuno' : '…')}</div></div><div class="rep-x">${extra.join('')}</div></div>`;
