@@ -132,6 +132,9 @@ body:not(.night) .note-box .note-it{filter:brightness(.8) saturate(1.3)}
 .cop-badge{background:var(--cop);color:var(--on-accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.88em;padding:.22em .7em;border-radius:6px;animation:copBlink 2s ease-in-out infinite}
 @keyframes copBlink{50%{opacity:.6}}
 .cop-next{color:var(--cop);font-weight:600}
+.ces-next{color:#f59e0b;font-weight:600}
+.ces-next b{font-weight:800;text-transform:uppercase}
+body.night .ces-next{color:#fbbf24}
 .blocks{display:grid;grid-template-columns:repeat(var(--nblocks,4),minmax(0,1fr));gap:1vw;margin-top:1.6vh}
 .blk{background:var(--card);border-radius:min(1.2vw,2vh);padding:2vh 1.1vw 2.2vh;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:1.4vh;min-width:0;border:1.5px solid transparent}
 .blk.cur{border-color:var(--sc)}
@@ -1254,6 +1257,8 @@ function renderRep(el, kind, now){
   if(cop) extra.push(`<span class="cop-badge">Copertura momentanea · fino alle ${cop.to}</span>`, `<span>al posto di ${esc(disp(cop.titolare || base))}</span>`);
   else if(base && tit && base !== tit) extra.push(`<span>al posto di ${esc(disp(tit))}</span>`);
   if(next && (!cop || next.id !== cop.id)) extra.push(`<span class="cop-next">Copertura ${next.from}–${next.to}: ${esc(disp(next.sostituto))}</span>`);
+  const nf = prossimaFasciaCeduta(kind, now);
+  if(nf) extra.push(`<span class="ces-next">Dalle ${nf.hm}: <b>${esc(disp(nf.who))}</b> (cessione)</span>`);
   el.classList.toggle('cov', !!cop);
   const red = !!currentArrival || !!REP_SOON;   // uguale per autista e infermiere
   el.classList.toggle('soon', red); el.classList.toggle('safe', !red);
@@ -1280,6 +1285,16 @@ function renderNotes(now){
       const st = [`color:${NOTE_COLORI[n.colore] || NOTE_COLORI.bianco}`, `font-weight:${n.grassetto ? 700 : 500}`, n.corsivo ? 'font-style:italic' : '', n.maiuscolo ? 'text-transform:uppercase;letter-spacing:.03em' : ''].filter(Boolean).join(';');
       return `<div class="note-it ${n.dim === 's' || n.dim === 'l' ? n.dim : 'm'}" style="${st}">${esc(String(n.testo).trim()).replace(/\n/g, '<br>')}</div>`;
     }).join('')}</div>` : '';
+}
+// Prossima fascia coperta da un collega diverso per una cessione (07:00, 20:00 o 24:00; le 13:00 sono il cambio normale del turno)
+function prossimaFasciaCeduta(kind, now){
+  const R = kind === 'aut' ? autRep : infRep;
+  const today = ymd(now), s = slotOfHour(now.getHours());
+  const bounds = [['07:00', today, 1], ['13:00', today, 2], ['20:00', today, 3], ['00:00', addDays(today, 1), 0]];
+  const [hm, nd, ns] = bounds[s];
+  if(hm === '13:00') return null;
+  const cur = (R.days[today] || [])[s] || '', nx = (R.days[nd] || [])[ns] || '';
+  return cur && nx && cur !== nx ? { hm, who: nx } : null;
 }
 function groupHtml(kind, list, repName){
   let body;
