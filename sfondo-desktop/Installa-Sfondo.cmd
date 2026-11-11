@@ -74,6 +74,15 @@ function Ferma-Altri {
       ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
   } catch {}
 }
+# toglie la versione "finestra" (Installa-Finestra.cmd), se c'era: i due modi non devono convivere
+function Togli-Finestra {
+  Remove-Item (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup\ReperibiliLive-Finestra.cmd') -Force -ErrorAction SilentlyContinue
+  try {
+    Get-CimInstance Win32_Process -Filter "Name='powershell.exe' OR Name='msedge.exe'" |
+      Where-Object { $_.ProcessId -ne $PID -and (($_.Name -eq 'powershell.exe' -and $_.CommandLine -like "*RLMode='finestra'*") -or ($_.Name -eq 'msedge.exe' -and $_.CommandLine -like '*ReperibiliLive*edge-finestra*')) } |
+      ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+  } catch {}
+}
 $wpOk = $false
 try {
   Add-Type -ErrorAction Stop -TypeDefinition @"
@@ -111,6 +120,7 @@ function Risoluzione {
 # ── INSTALLA: copia questo testo in una cartella permessa, avvio automatico, partenza ──
 if($RLMode -eq 'installa'){
   Ferma-Altri
+  Togli-Finestra
   $scelta = $null
   foreach($c in $candidate){
     try {
@@ -134,6 +144,7 @@ if($RLMode -eq 'installa'){
 if($RLMode -eq 'ferma'){ Ferma-Altri; exit 0 }
 if($RLMode -eq 'disinstalla'){
   Ferma-Altri
+  Togli-Finestra
   Remove-Item $avvio -Force -ErrorAction SilentlyContinue
   $orig = Join-Path $dir 'sfondo-originale.txt'
   if(Test-Path $orig){ $p = (Get-Content $orig -Raw).Trim(); if($p -and (Test-Path $p)){ [void](Imposta-Sfondo $p) } }
